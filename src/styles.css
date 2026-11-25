@@ -59,6 +59,40 @@ button {
   margin: 0 0 26px;
 }
 
+.dashboard-nav {
+  display: flex;
+  gap: 8px;
+  margin: -10px 0 22px;
+  padding: 5px;
+  border: 1px solid #e0e9f4;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.dashboard-tab {
+  min-height: 40px;
+  flex: 1;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: #60738b;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.dashboard-tab:hover {
+  background: #f1f6fc;
+  color: #215dc3;
+}
+
+.dashboard-tab-active,
+.dashboard-tab-active:hover {
+  background: #2164db;
+  color: #fff;
+  box-shadow: 0 4px 11px rgba(33, 100, 219, 0.18);
+}
+
 .brand {
   gap: 14px;
 }
@@ -780,6 +814,15 @@ button {
   .topbar {
     align-items: flex-start;
     margin-bottom: 18px;
+  }
+
+  .dashboard-nav {
+    margin: -4px 0 18px;
+  }
+
+  .dashboard-tab {
+    padding: 8px 7px;
+    font-size: 12px;
   }
 
   .brand {

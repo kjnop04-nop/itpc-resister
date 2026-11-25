@@ -50,6 +50,12 @@ type CheckinRow = {
   staff_label: string;
 };
 
+type DashboardPage = "checkin" | "checked-in";
+
+function dashboardPageFromHash(): DashboardPage {
+  return window.location.hash === "#checked-in" ? "checked-in" : "checkin";
+}
+
 function normalizeCode(value: string) {
   return value.replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
@@ -85,6 +91,7 @@ export default function App() {
   const [members, setMembers] = useState<StaffAccount[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminBusyId, setAdminBusyId] = useState<string | null>(null);
+  const [dashboardPage, setDashboardPage] = useState<DashboardPage>(dashboardPageFromHash);
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Registration[]>([]);
   const [searching, setSearching] = useState(false);
@@ -143,7 +150,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (!session) return;
+    const syncPage = () => setDashboardPage(dashboardPageFromHash());
+    if (!window.location.hash) {
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}${window.location.search}#checkin`,
+      );
+    }
+    window.addEventListener("hashchange", syncPage);
+    return () => window.removeEventListener("hashchange", syncPage);
+  }, []);
+
+  useEffect(() => {
+    if (!session || dashboardPage !== "checkin") {
+      setSearching(false);
+      return;
+    }
     const code = normalizeCode(query);
     if (code.length < 3) {
       setCandidates([]);
@@ -174,10 +197,10 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query, session]);
+  }, [query, session, dashboardPage]);
 
   useEffect(() => {
-    if (!session || adminOpen) return;
+    if (!session || adminOpen || dashboardPage !== "checked-in") return;
     let cancelled = false;
     setCheckinsLoading(true);
     setCheckinsLoadingMore(false);
@@ -205,7 +228,7 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [session, adminOpen, checkinSearch, checkinsRefresh]);
+  }, [session, adminOpen, dashboardPage, checkinSearch, checkinsRefresh]);
 
   useEffect(() => {
     if (!cameraOpen) {
@@ -499,6 +522,14 @@ export default function App() {
     }
   }
 
+  function navigateDashboard(page: DashboardPage) {
+    setDashboardPage(page);
+    setAdminOpen(false);
+    setError("");
+    if (cameraOpen) setCameraOpen(false);
+    if (window.location.hash !== `#${page}`) window.location.hash = page;
+  }
+
   if (authLoading) {
     return <main className="screen"><div className="loading">กำลังเชื่อมต่อระบบ…</div></main>;
   }
@@ -592,12 +623,33 @@ export default function App() {
                   if (opening) void loadMembers();
                 }}
               >
-                {adminOpen ? "กลับหน้าเช็กชื่อ" : "จัดการสมาชิก"}
+                {adminOpen ? "ปิดจัดการสมาชิก" : "จัดการสมาชิก"}
               </button>
             )}
             <button className="button button-quiet" onClick={() => void signOut()}>ออกจากระบบ</button>
           </div>
         </header>
+
+        {!adminOpen && (
+          <nav className="dashboard-nav" aria-label="หน้าระบบเช็กชื่อ">
+            <button
+              className={`dashboard-tab ${dashboardPage === "checkin" ? "dashboard-tab-active" : ""}`}
+              type="button"
+              aria-current={dashboardPage === "checkin" ? "page" : undefined}
+              onClick={() => navigateDashboard("checkin")}
+            >
+              ค้นหาและเช็กชื่อ
+            </button>
+            <button
+              className={`dashboard-tab ${dashboardPage === "checked-in" ? "dashboard-tab-active" : ""}`}
+              type="button"
+              aria-current={dashboardPage === "checked-in" ? "page" : undefined}
+              onClick={() => navigateDashboard("checked-in")}
+            >
+              ผู้ที่เช็กอินแล้ว
+            </button>
+          </nav>
+        )}
 
         {notice && <div className="success-toast" role="status">✓ {notice}</div>}
         {error && <div className="error-banner" role="alert">{error}</div>}
@@ -695,6 +747,8 @@ export default function App() {
           </section>
         ) : (
           <>
+        {dashboardPage === "checkin" && (
+          <>
         <section className="card search-card">
           <div className="section-heading">
             <span className="step-number">1</span>
@@ -739,6 +793,9 @@ export default function App() {
           )}
         </section>
 
+          </>
+        )}
+        {dashboardPage === "checked-in" && (
         <section className="card checked-in-card">
           <div className="checked-in-heading">
             <div className="section-heading">
@@ -802,7 +859,10 @@ export default function App() {
             </button>
           )}
         </section>
+        )}
 
+        {dashboardPage === "checkin" && (
+          <>
         {selected && (
           <section className="card registration-card">
             <div className="section-heading">
@@ -892,6 +952,8 @@ export default function App() {
             <span className="waiting-icon" aria-hidden="true">⌕</span>
             <p>ค้นหารหัสเพื่อเริ่มเช็กอินผู้สมัครคนถัดไป</p>
           </div>
+        )}
+          </>
         )}
           </>
         )}
