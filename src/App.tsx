@@ -168,7 +168,7 @@ export default function App() {
       return;
     }
     const code = normalizeCode(query);
-    if (code.length < 3) {
+    if (code.length < 1) {
       setCandidates([]);
       setSearching(false);
       return;
@@ -754,7 +754,7 @@ export default function App() {
             <span className="step-number">1</span>
             <div>
               <h2>ค้นหารหัสผู้สมัคร</h2>
-              <p className="muted">พิมพ์รหัสรับสมัคร เช่น 70KE032</p>
+              <p className="muted">พิมพ์รหัสบางส่วนก็ค้นหาได้ เช่น 70KE</p>
             </div>
           </div>
           <div className="search-control">
@@ -763,7 +763,7 @@ export default function App() {
               aria-label="ค้นหาด้วยรหัสรับสมัคร"
               autoComplete="off"
               autoFocus
-              placeholder="พิมพ์รหัสรับสมัคร"
+              placeholder="พิมพ์รหัสรับสมัครบางส่วน"
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -788,7 +788,7 @@ export default function App() {
               ))}
             </div>
           )}
-          {!selected && !searching && normalizeCode(query).length >= 3 && candidates.length === 0 && !error && (
+          {!selected && !searching && normalizeCode(query).length >= 1 && candidates.length === 0 && !error && (
             <div className="not-found"><span aria-hidden="true">○</span><strong>ไม่พบรหัสนี้ในระบบ</strong></div>
           )}
         </section>

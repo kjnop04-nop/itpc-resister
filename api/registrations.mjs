@@ -11,8 +11,8 @@ export default async function handler(request, response) {
       .searchParams.get("code")
       ?.replace(/[^a-z0-9]/gi, "")
       .toUpperCase();
-    if (!code || code.length < 3 || code.length > 30) {
-      sendJson(response, 400, { error: "กรุณากรอกรหัสรับสมัครอย่างน้อย 3 ตัวอักษร" });
+    if (!code || code.length > 30) {
+      sendJson(response, 400, { error: "รหัสรับสมัครต้องมีความยาวไม่เกิน 30 ตัวอักษร" });
       return;
     }
 
