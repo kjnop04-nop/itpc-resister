@@ -1,8 +1,8 @@
 :root {
   font-family: "Noto Sans Thai", Sarabun, Tahoma, sans-serif;
-  color: #39363c;
+  color: #2f2a32;
   background: #fbf8f2;
-  --muted: #77727a;
+  --muted: #514b55;
   --accent: #9f77b4;
   --accent-soft: #f2ecf6;
   --line: #e9e3dc;
@@ -90,7 +90,7 @@ button {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: #687a93;
+  color: #514b55;
   font-size: 14px;
   font-weight: 600;
   transition: background 0.18s, color 0.18s;
@@ -104,7 +104,7 @@ button {
 .dashboard-tab-active,
 .dashboard-tab-active:hover {
   background: var(--accent);
-  color: #fff;
+  color: #211b24;
 }
 
 .brand-mark svg {
@@ -124,22 +124,22 @@ button {
   place-items: center;
   border-radius: 13px;
   background: var(--accent);
-  color: #fff;
+  color: #211b24;
 }
 
 .eyebrow {
   margin: 0 0 2px;
-  color: #827a82;
-  font-size: 10px;
+  color: #5f5664;
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.06em;
 }
 
 .topbar h1,
 .login-card h1,
 .setup-card h1 {
   margin: 0;
-  color: #1c2b45;
+  color: #2f2a32;
   font-size: 23px;
   font-weight: 700;
 }
@@ -147,8 +147,8 @@ button {
 .topbar .system-title {
   max-width: 500px;
   color: var(--accent);
-  font-size: 18px;
-  line-height: 1.4;
+  font-size: 19px;
+  line-height: 1.55;
 }
 
 .login-card .system-title {
@@ -167,8 +167,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
-  color: #514d54;
-  font-size: 13px;
+  color: #39343c;
+  font-size: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -214,8 +214,8 @@ button {
   border: 1px solid #e7ddec;
   border-radius: 999px;
   background: var(--accent-soft);
-  color: var(--accent);
-  font-size: 12px;
+  color: #211b24;
+  font-size: 14px;
   font-weight: 700;
   white-space: nowrap;
 }
@@ -262,14 +262,14 @@ button {
 }
 
 .checked-in-name {
-  color: #39363c;
-  font-size: 14px;
+  color: #2f2a32;
+  font-size: 15px;
   font-weight: 600;
 }
 
 .checked-in-meta {
-  color: #77727a;
-  font-size: 12px;
+  color: #514b55;
+  font-size: 14px;
 }
 
 .checked-in-empty {
@@ -294,7 +294,7 @@ button {
   place-items: center;
   border-radius: 9px;
   background: #f2ecf6;
-  color: var(--accent);
+  color: #211b24;
   font-size: 15px;
   font-weight: 700;
 }
@@ -302,13 +302,13 @@ button {
 .section-heading h2 {
   margin: 0;
   color: var(--accent);
-  font-size: 18px;
+  font-size: 19px;
   font-weight: 700;
 }
 
 .section-heading p {
   margin: 2px 0 0;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .muted {
@@ -348,18 +348,18 @@ button {
   border: 0;
   outline: 0;
   background: transparent;
-  color: #39363c;
+  color: #2f2a32;
   font-size: 18px;
 }
 
 .search-control input::placeholder {
-  color: #9a949a;
+  color: #6a646e;
 }
 
 .searching-label {
   flex: 0 0 auto;
-  color: #77727a;
-  font-size: 12px;
+  color: #514b55;
+  font-size: 14px;
 }
 
 .candidate-list {
@@ -389,28 +389,28 @@ button {
 
 .candidate-code {
   min-width: 98px;
-  color: var(--accent);
+  color: #2f2a32;
   font-size: 16px;
   font-weight: 700;
 }
 
 .candidate-name {
   flex: 1;
-  color: #39363c;
+  color: #2f2a32;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .candidate-group {
-  color: #77727a;
-  font-size: 13px;
+  color: #514b55;
+  font-size: 14px;
   white-space: nowrap;
 }
 
 .candidate-arrow {
   display: inline-flex;
   flex: 0 0 auto;
-  color: #9a949a;
+  color: #726b76;
 }
 
 .candidate-arrow svg {
@@ -427,7 +427,7 @@ button {
   border: 1px solid #ece5dc;
   border-radius: 10px;
   background: #faf6ef;
-  color: #5f5a61;
+  color: #48424b;
 }
 
 .empty-icon {
@@ -450,7 +450,7 @@ button {
 }
 
 .registration-code {
-  color: var(--accent);
+  color: #2f2a32;
   font-size: clamp(29px, 7vw, 40px);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -459,7 +459,7 @@ button {
 
 .registration-name {
   margin-top: 8px;
-  color: #39363c;
+  color: #2f2a32;
   font-size: clamp(20px, 4vw, 25px);
   font-weight: 600;
   line-height: 1.45;
@@ -467,7 +467,7 @@ button {
 
 .registration-session {
   margin-top: 13px;
-  color: #5f5a61;
+  color: #49434c;
   font-size: 17px;
   font-weight: 600;
 }
@@ -520,7 +520,7 @@ button {
 .status-ready {
   border-color: #d8e8d8;
   background: #edf5e9;
-  color: #4a5147;
+  color: #39343c;
 }
 
 .status-ready .status-icon {
@@ -530,7 +530,7 @@ button {
 .status-late {
   border-color: #eee2bf;
   background: #faf3dc;
-  color: #5d5546;
+  color: #39343c;
 }
 
 .status-late .status-icon {
@@ -540,7 +540,7 @@ button {
 .status-checked {
   border-color: #efd9dc;
   background: #f8e9eb;
-  color: #5c484c;
+  color: #39343c;
 }
 
 .status-checked .status-icon {
@@ -550,7 +550,7 @@ button {
 .status-pending {
   border-color: #dce5ed;
   background: #edf3f7;
-  color: #53565b;
+  color: #39343c;
 }
 
 .photo-section {
@@ -571,7 +571,7 @@ button {
   border: 1px dashed #d4e4e9;
   border-radius: 11px;
   background: #edf3f7;
-  color: #4c5158;
+  color: #39343c;
   font-size: 16px;
   font-weight: 600;
   transition: border-color 0.18s, background 0.18s;
@@ -618,7 +618,7 @@ button {
   padding: 9px 16px;
   border: 0;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   transition: transform 0.15s, background 0.15s;
 }
@@ -636,13 +636,19 @@ button {
 }
 
 .button:disabled {
-  cursor: wait;
-  opacity: 0.65;
+  cursor: not-allowed;
+  opacity: 1;
 }
 
 .button-primary {
   background: var(--accent);
-  color: #fff;
+  color: #211b24;
+  font-weight: 700;
+}
+
+.button-primary:disabled {
+  background: #e8dced;
+  color: #514b55;
 }
 
 .button-primary:hover:not(:disabled) {
@@ -676,8 +682,8 @@ button {
   padding: 7px 0;
   border: 0;
   background: none;
-  color: #687b94;
-  font-size: 13px;
+  color: #514b55;
+  font-size: 14px;
 }
 
 .back-button:hover {
@@ -696,13 +702,13 @@ button {
 
 .waiting-hint p {
   margin: 7px 0 0;
-  font-size: 14px;
+  font-size: 15px;
 }
 
 .waiting-icon {
   width: 20px;
   height: 20px;
-  color: #c9b2d5;
+  color: #726b76;
 }
 
 .success-toast,
@@ -747,7 +753,7 @@ button {
   padding: 10px 12px;
   border: 1px solid #efd9dc;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .login-screen {
@@ -777,9 +783,9 @@ button {
 .login-card > .muted,
 .setup-card > p:last-child {
   margin: 8px 0 24px;
-  color: #77727a;
-  font-size: 14px;
-  line-height: 1.6;
+  color: #514b55;
+  font-size: 15px;
+  line-height: 1.7;
 }
 
 .login-form {
@@ -789,8 +795,8 @@ button {
 
 .login-form label {
   margin-top: 7px;
-  color: #514d54;
-  font-size: 13px;
+  color: #39343c;
+  font-size: 15px;
   font-weight: 600;
 }
 
@@ -802,7 +808,7 @@ button {
   border-radius: 8px;
   outline: none;
   background: #fff;
-  color: #39363c;
+  color: #2f2a32;
   transition: border-color 0.18s, outline-color 0.18s;
 }
 
@@ -832,12 +838,12 @@ button {
 .members-heading h2 {
   margin: 0;
   color: var(--accent);
-  font-size: 19px;
+  font-size: 20px;
 }
 
 .members-heading p {
   margin: 5px 0 0;
-  font-size: 13px;
+  font-size: 15px;
 }
 
 .member-list {
@@ -856,7 +862,7 @@ button {
   display: grid;
   min-width: 180px;
   gap: 4px;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .member-details strong {
@@ -878,7 +884,7 @@ button {
 .member-actions .button {
   min-height: 44px;
   padding: 7px 10px;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .button-danger {
@@ -970,7 +976,7 @@ button {
 
   .dashboard-tab {
     padding: 8px 7px;
-    font-size: 12px;
+    font-size: 13px;
   }
 
   .brand {
@@ -989,7 +995,7 @@ button {
 
   .topbar .system-title {
     max-width: min(45vw, 220px);
-    font-size: 15px;
+    font-size: 16px;
   }
 
   .staff-menu {
@@ -1001,13 +1007,13 @@ button {
 
   .staff-email {
     max-width: 130px;
-    font-size: 11px;
+    font-size: 14px;
   }
 
   .staff-menu .button {
     min-height: 44px;
     padding: 7px 8px;
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .search-card,
@@ -1060,7 +1066,7 @@ button {
 
   .candidate-group {
     margin-left: auto;
-    font-size: 12px;
+    font-size: 14px;
   }
 
   .candidate-arrow {
