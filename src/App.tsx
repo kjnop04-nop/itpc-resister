@@ -148,6 +148,10 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Registration[]>([]);
   const [searching, setSearching] = useState(false);
+  const [browseApplicants, setBrowseApplicants] = useState<Registration[]>([]);
+  const [applicantsLoading, setApplicantsLoading] = useState(true);
+  const [applicantsLoadingMore, setApplicantsLoadingMore] = useState(false);
+  const [applicantsHasMore, setApplicantsHasMore] = useState(false);
   const [checkinSearch, setCheckinSearch] = useState("");
   const [checkinRows, setCheckinRows] = useState<CheckinRow[]>([]);
   const [checkinsLoading, setCheckinsLoading] = useState(false);
@@ -251,6 +255,40 @@ export default function App() {
       window.clearTimeout(timer);
     };
   }, [query, session, dashboardPage]);
+
+  useEffect(() => {
+    if (!session || adminOpen || dashboardPage !== "checkin" || query.trim()) {
+      setApplicantsLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setApplicantsLoading(true);
+    setApplicantsHasMore(false);
+    setError("");
+
+    void apiRequest<{
+      registrations: Registration[];
+      has_more: boolean;
+    }>("/api/registrations?offset=0")
+      .then(({ registrations, has_more: hasMore }) => {
+        if (cancelled) return;
+        setBrowseApplicants(registrations);
+        setApplicantsHasMore(hasMore);
+      })
+      .catch((listError) => {
+        if (cancelled) return;
+        setBrowseApplicants([]);
+        setError(`โหลดรายชื่อผู้สมัครไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
+      })
+      .finally(() => {
+        if (!cancelled) setApplicantsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session, adminOpen, dashboardPage, query]);
 
   useEffect(() => {
     if (!session || adminOpen || dashboardPage !== "checked-in") return;
@@ -399,6 +437,25 @@ export default function App() {
       setError(`โหลดรายการเช็กอินเพิ่มเติมไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
       setCheckinsLoadingMore(false);
+    }
+  }
+
+  async function loadMoreApplicants() {
+    if (applicantsLoadingMore || !applicantsHasMore || query.trim()) return;
+
+    setApplicantsLoadingMore(true);
+    setError("");
+    try {
+      const { registrations, has_more: hasMore } = await apiRequest<{
+        registrations: Registration[];
+        has_more: boolean;
+      }>(`/api/registrations?offset=${browseApplicants.length}`);
+      setBrowseApplicants((current) => [...current, ...registrations]);
+      setApplicantsHasMore(hasMore);
+    } catch (listError) {
+      setError(`โหลดรายชื่อผู้สมัครเพิ่มเติมไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setApplicantsLoadingMore(false);
     }
   }
 
@@ -652,6 +709,15 @@ export default function App() {
   const onTime = selected
     ? isWithinSlot(selected.slot_start, selected.slot_end, currentBangkokMinutes(new Date(clock)))
     : false;
+  const groupedApplicants = new Map<number, Registration[]>();
+  for (const applicant of browseApplicants) {
+    const group = groupedApplicants.get(applicant.group_number) || [];
+    group.push(applicant);
+    groupedApplicants.set(applicant.group_number, group);
+  }
+  const applicantGroups = [...groupedApplicants.entries()].sort(
+    ([firstGroup], [secondGroup]) => firstGroup - secondGroup,
+  );
 
   return (
     <main className="screen">
@@ -809,7 +875,7 @@ export default function App() {
           <div className="section-heading">
             <span className="step-number">1</span>
             <div>
-              <h2>ค้นหารหัสผู้สมัคร</h2>
+            <h2>ค้นหาผู้สมัคร</h2>
               <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
             </div>
           </div>
@@ -851,6 +917,73 @@ export default function App() {
             </div>
           )}
         </section>
+
+        {!selected && !query.trim() && (
+          <section className="card applicants-card" aria-label="รายชื่อผู้สมัคร">
+            <header className="applicants-heading">
+              <div>
+                <h2>รายชื่อผู้สมัคร</h2>
+                <p className="muted">เลือกชื่อเพื่อดูข้อมูลและดำเนินการเช็กอิน</p>
+              </div>
+              {browseApplicants.length > 0 && (
+                <span className="checked-in-count">แสดง {browseApplicants.length} รายการ</span>
+              )}
+            </header>
+
+            {applicantsLoading ? (
+              <div className="status status-pending" role="status" aria-live="polite">
+                กำลังโหลดรายชื่อผู้สมัคร…
+              </div>
+            ) : browseApplicants.length === 0 && !error ? (
+              <div className="not-found">
+                <Icon name="search" className="empty-icon" />
+                <strong>ยังไม่มีข้อมูลผู้สมัคร</strong>
+              </div>
+            ) : browseApplicants.length > 0 ? (
+              <div className="applicant-groups">
+                {applicantGroups.map(([groupNumber, groupApplicants]) => (
+                  <section
+                    className="applicant-group"
+                    key={groupNumber}
+                    aria-labelledby={`applicant-group-${groupNumber}`}
+                  >
+                    <header className="applicant-group-heading">
+                      <h3 id={`applicant-group-${groupNumber}`}>กลุ่ม {groupNumber}</h3>
+                    </header>
+                    <div className="applicant-list">
+                      {groupApplicants.map((applicant) => (
+                        <button
+                          className="applicant-row"
+                          key={applicant.id}
+                          type="button"
+                          onClick={() => void chooseRegistration(applicant)}
+                        >
+                          <span className="candidate-code">{applicant.application_code}</span>
+                          <span className="applicant-name">
+                            {applicant.title}{applicant.first_name} {applicant.last_name}
+                          </span>
+                          <span className="applicant-slot">รอบ {applicant.slot_text}</span>
+                          <span className="candidate-arrow"><Icon name="chevron-right" /></span>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            ) : null}
+
+            {applicantsHasMore && !applicantsLoading && (
+              <button
+                className="button button-quiet load-more-button"
+                type="button"
+                onClick={() => void loadMoreApplicants()}
+                disabled={applicantsLoadingMore}
+              >
+                {applicantsLoadingMore ? "กำลังโหลด…" : "โหลดรายชื่อเพิ่มเติม"}
+              </button>
+            )}
+          </section>
+        )}
 
           </>
         )}
@@ -1004,15 +1137,9 @@ export default function App() {
 
             <button className="back-button" onClick={() => { setSelected(null); setCheckin(null); setPhoto(null); setCameraOpen(false); }}>
               <Icon name="arrow-left" />
-              <span>กลับไปผลการค้นหา</span>
+              <span>{query.trim() ? "กลับไปผลการค้นหา" : "กลับไปหน้ารายชื่อผู้สมัคร"}</span>
             </button>
           </section>
-        )}
-        {!selected && (
-          <div className="waiting-hint">
-            <Icon name="search" className="waiting-icon" />
-            <p>ค้นหาด้วยรหัสหรือชื่อ แล้วเลือกผู้สมัครที่ต้องการ</p>
-          </div>
         )}
           </>
         )}
