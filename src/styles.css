@@ -1,8 +1,10 @@
 :root {
   font-family: "Noto Sans Thai", Tahoma, sans-serif;
   color: #1b2940;
-  background: #f3f6fb;
-  --muted: #74839a;
+  background: #f6f7f2;
+  --muted: #718278;
+  --accent: #17847a;
+  --accent-dark: #126b63;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -20,9 +22,9 @@ body {
   margin: 0;
   background-attachment: fixed;
   background:
-    radial-gradient(ellipse at 8% 0%, rgba(180, 218, 255, 0.48), transparent 38rem),
-    radial-gradient(ellipse at 92% 18%, rgba(201, 234, 229, 0.34), transparent 34rem),
-    #f3f6fb;
+    radial-gradient(ellipse at 8% 0%, rgba(204, 235, 222, 0.62), transparent 38rem),
+    radial-gradient(ellipse at 92% 18%, rgba(255, 232, 198, 0.4), transparent 34rem),
+    #f6f7f2;
 }
 
 button,
@@ -67,7 +69,7 @@ button {
   gap: 6px;
   margin: -8px 0 24px;
   padding: 6px;
-  border: 1px solid rgba(220, 229, 241, 0.9);
+  border: 1px solid rgba(222, 231, 222, 0.92);
   border-radius: 15px;
   background: rgba(255, 255, 255, 0.78);
   box-shadow: 0 8px 24px rgba(34, 57, 91, 0.045);
@@ -88,15 +90,15 @@ button {
 }
 
 .dashboard-tab:hover {
-  background: #f1f6fc;
-  color: #215dc3;
+  background: #edf6f2;
+  color: var(--accent-dark);
 }
 
 .dashboard-tab-active,
 .dashboard-tab-active:hover {
-  background: linear-gradient(135deg, #347be2, #245fc4);
+  background: linear-gradient(135deg, #24978a, #14756d);
   color: #fff;
-  box-shadow: 0 5px 13px rgba(37, 96, 196, 0.2);
+  box-shadow: 0 5px 13px rgba(23, 132, 122, 0.22);
 }
 
 .brand {
@@ -110,16 +112,16 @@ button {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 16px;
-  background: linear-gradient(145deg, #3985eb, #205cc7);
+  background: linear-gradient(145deg, #31a99b, #14756d);
   color: #fff;
   font-size: 27px;
   font-weight: 700;
-  box-shadow: 0 10px 22px rgba(36, 96, 194, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  box-shadow: 0 10px 22px rgba(23, 132, 122, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
 .eyebrow {
   margin: 0 0 2px;
-  color: #6380a1;
+  color: #927446;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -163,10 +165,24 @@ button {
 }
 
 .card {
+  position: relative;
   border: 1px solid rgba(224, 232, 243, 0.95);
   border-radius: 22px;
   background: #fff;
   box-shadow: 0 16px 42px rgba(37, 58, 91, 0.075), 0 2px 6px rgba(37, 58, 91, 0.025);
+}
+
+.card::before {
+  position: absolute;
+  top: 0;
+  right: 24px;
+  left: 24px;
+  height: 3px;
+  border-radius: 0 0 5px 5px;
+  background: linear-gradient(90deg, #17847a, #e1aa5a);
+  content: "";
+  opacity: 0.82;
+  pointer-events: none;
 }
 
 .search-card,
@@ -196,10 +212,10 @@ button {
 
 .checked-in-count {
   padding: 7px 11px;
-  border: 1px solid #dfeaff;
+  border: 1px solid #d8ebe4;
   border-radius: 999px;
-  background: #f0f5ff;
-  color: #285db5;
+  background: #edf7f2;
+  color: #247567;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -279,8 +295,8 @@ button {
   flex: 0 0 auto;
   place-items: center;
   border-radius: 12px;
-  background: linear-gradient(145deg, #eff5ff, #e8f0ff);
-  color: #2868d7;
+  background: linear-gradient(145deg, #eff8f4, #e4f2ec);
+  color: var(--accent);
   font-size: 15px;
   font-weight: 700;
 }
@@ -306,21 +322,21 @@ button {
   height: 60px;
   gap: 13px;
   padding: 0 18px;
-  border: 1.5px solid #e0e8f2;
+  border: 1.5px solid #dfe9e3;
   border-radius: 16px;
-  background: linear-gradient(135deg, #fff, #fbfdff);
+  background: linear-gradient(135deg, #fff, #fbfdfa);
   box-shadow: inset 0 1px 2px rgba(34, 57, 91, 0.025);
   transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
 
 .search-control:focus-within {
-  border-color: #75a3eb;
+  border-color: #69b4a5;
   background: #fff;
-  box-shadow: 0 0 0 4px rgba(54, 118, 222, 0.1), 0 5px 16px rgba(43, 90, 163, 0.06);
+  box-shadow: 0 0 0 4px rgba(23, 132, 122, 0.11), 0 5px 16px rgba(43, 116, 100, 0.07);
 }
 
 .search-icon {
-  color: #6f91bd;
+  color: #54998d;
   font-family: Arial, sans-serif;
   font-size: 29px;
   line-height: 1;
@@ -366,16 +382,16 @@ button {
 
 .candidate-row:hover,
 .candidate-row:focus-visible {
-  border-color: #bfd3f1;
-  background: #fbfdff;
-  box-shadow: 0 7px 17px rgba(42, 75, 120, 0.07);
+  border-color: #b7d9cd;
+  background: #fbfefa;
+  box-shadow: 0 7px 17px rgba(42, 92, 75, 0.07);
   outline: none;
   transform: translateY(-1px);
 }
 
 .candidate-code {
   min-width: 98px;
-  color: #245ebc;
+  color: #247567;
   font-size: 16px;
   font-weight: 700;
 }
@@ -424,12 +440,12 @@ button {
   border: 1px solid #e5ecf5;
   border-radius: 18px;
   background:
-    radial-gradient(ellipse at 100% 0%, rgba(201, 230, 235, 0.32), transparent 50%),
-    linear-gradient(130deg, #f8fbff, #f2f7fc);
+    radial-gradient(ellipse at 100% 0%, rgba(211, 238, 221, 0.48), transparent 50%),
+    linear-gradient(130deg, #fbfdf8, #f1f8f2);
 }
 
 .registration-code {
-  color: #245ebc;
+  color: #247567;
   font-size: clamp(29px, 7vw, 40px);
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -542,19 +558,19 @@ button {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  border: 1.5px dashed #b7c9df;
+  border: 1.5px dashed #b6d2c8;
   border-radius: 16px;
-  background: linear-gradient(135deg, #fbfdff, #f5f9fe);
-  color: #315784;
+  background: linear-gradient(135deg, #fcfefa, #f1f8f3);
+  color: #326d61;
   font-size: 16px;
   font-weight: 600;
   transition: border-color 0.18s, background 0.18s, box-shadow 0.18s;
 }
 
 .camera-start:hover {
-  border-color: #6f9fe6;
-  background: #f3f8ff;
-  box-shadow: 0 6px 16px rgba(43, 90, 163, 0.07);
+  border-color: #69ad9b;
+  background: #eef8f1;
+  box-shadow: 0 6px 16px rgba(43, 116, 100, 0.08);
 }
 
 .camera-symbol {
@@ -601,7 +617,7 @@ button {
 .dashboard-tab:focus-visible,
 .back-button:focus-visible,
 .camera-start:focus-visible {
-  outline: 3px solid rgba(54, 118, 222, 0.35);
+  outline: 3px solid rgba(23, 132, 122, 0.35);
   outline-offset: 2px;
 }
 
@@ -615,14 +631,14 @@ button {
 }
 
 .button-primary {
-  background: linear-gradient(135deg, #347be2, #245fc4);
+  background: linear-gradient(135deg, #24978a, #14756d);
   color: #fff;
-  box-shadow: 0 5px 13px rgba(37, 96, 196, 0.2);
+  box-shadow: 0 5px 13px rgba(23, 132, 122, 0.22);
 }
 
 .button-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2d70d5, #1e55b5);
-  box-shadow: 0 7px 17px rgba(37, 96, 196, 0.25);
+  background: linear-gradient(135deg, #1d8a7f, #105f59);
+  box-shadow: 0 7px 17px rgba(23, 132, 122, 0.26);
 }
 
 .button-quiet {
@@ -651,7 +667,7 @@ button {
 }
 
 .back-button:hover {
-  color: #245ebc;
+  color: var(--accent-dark);
 }
 
 .waiting-hint {
@@ -752,18 +768,18 @@ button {
   width: 100%;
   min-height: 46px;
   padding: 11px 13px;
-  border: 1px solid #dfe7f1;
+  border: 1px solid #dfe9e3;
   border-radius: 11px;
   outline: none;
-  background: #fcfdff;
+  background: #fcfdfa;
   color: #20334e;
   transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
 
 .login-form input:focus {
-  border-color: #75a3eb;
+  border-color: #69b4a5;
   background: #fff;
-  box-shadow: 0 0 0 3px rgba(54, 118, 222, 0.1);
+  box-shadow: 0 0 0 3px rgba(23, 132, 122, 0.11);
 }
 
 .members-card {
@@ -800,9 +816,9 @@ button {
 
 .member-row {
   padding: 16px;
-  border: 1px solid #e7edf5;
+  border: 1px solid #e4ece5;
   border-radius: 15px;
-  background: linear-gradient(135deg, #fff, #fcfdff);
+  background: linear-gradient(135deg, #fff, #fcfdfa);
 }
 
 .member-details {
@@ -864,6 +880,11 @@ button {
 @media (max-width: 640px) {
   .screen {
     padding: 20px 13px 40px;
+  }
+
+  .card::before {
+    right: 16px;
+    left: 16px;
   }
 
   .topbar {
