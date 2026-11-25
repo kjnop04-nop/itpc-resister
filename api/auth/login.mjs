@@ -18,7 +18,7 @@ function loginFailureMessage(error) {
     code === "42703" ||
     code === "42883"
   ) {
-    return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ทั้ง 6 ไฟล์ตามลำดับใน README.md";
+    return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ทั้ง 7 ไฟล์ตามลำดับใน README.md";
   }
   if (
     message.includes("SUPABASE_URL") ||

@@ -7,21 +7,18 @@ export default async function handler(request, response) {
   }
 
   await withAuthenticatedStaff(request, response, async () => {
-    const code = new URL(request.url, "http://localhost")
-      .searchParams.get("code")
-      ?.replace(/[^a-z0-9]/gi, "")
-      .toUpperCase();
-    if (!code || code.length > 30) {
-      sendJson(response, 400, { error: "รหัสรับสมัครต้องมีความยาวไม่เกิน 30 ตัวอักษร" });
+    const query = new URL(request.url, "http://localhost")
+      .searchParams.get("q")
+      ?.trim();
+    if (!query || query.length > 100) {
+      sendJson(response, 400, { error: "กรุณากรอกคำค้นหาไม่เกิน 100 ตัวอักษร" });
       return;
     }
 
-    const { data, error } = await getAdminClient()
-      .from("registrations")
-      .select("id, application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start, slot_end")
-      .ilike("application_code", `%${code}%`)
-      .order("application_code")
-      .limit(10);
+    const { data, error } = await getAdminClient().rpc("search_registrations", {
+      p_query: query,
+      p_limit: 10,
+    });
     if (error) throw error;
     sendJson(response, 200, { registrations: data });
   });

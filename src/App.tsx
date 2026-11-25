@@ -52,12 +52,11 @@ type CheckinRow = {
 
 type DashboardPage = "checkin" | "checked-in";
 
+const SYSTEM_NAME =
+  "ระบบลงทะเบียนเพื่อพิจารณาความพร้อมของนักเรียนเพื่อเข้าศึกษาต่อในระดับอนุบาล 1";
+
 function dashboardPageFromHash(): DashboardPage {
   return window.location.hash === "#checked-in" ? "checked-in" : "checkin";
-}
-
-function normalizeCode(value: string) {
-  return value.replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
 
 function formatCheckinTime(value: string) {
@@ -167,8 +166,8 @@ export default function App() {
       setSearching(false);
       return;
     }
-    const code = normalizeCode(query);
-    if (code.length < 1) {
+    const searchTerm = query.trim();
+    if (!searchTerm) {
       setCandidates([]);
       setSearching(false);
       return;
@@ -179,7 +178,7 @@ export default function App() {
     const timer = window.setTimeout(async () => {
       try {
         const { registrations } = await apiRequest<{ registrations: Registration[] }>(
-          `/api/registrations?code=${encodeURIComponent(code)}`,
+          `/api/registrations?q=${encodeURIComponent(searchTerm)}`,
         );
         if (cancelled) return;
         setError("");
@@ -539,8 +538,8 @@ export default function App() {
       <main className="screen login-screen">
         <section className="card login-card">
           <div className="brand-mark" aria-hidden="true">✓</div>
-          <p className="eyebrow">EVENT CHECK-IN</p>
-          <h1>เช็กชื่อหน้างาน</h1>
+          <p className="eyebrow">KINDERGARTEN 1 REGISTRATION</p>
+          <h1 className="system-title">{SYSTEM_NAME}</h1>
           <p className="muted">
             {authMode === "login" ? "เข้าสู่ระบบสำหรับเจ้าหน้าที่" : "สมัครบัญชีเจ้าหน้าที่ใหม่"}
           </p>
@@ -607,8 +606,8 @@ export default function App() {
           <div className="brand">
             <div className="brand-mark" aria-hidden="true">✓</div>
             <div>
-              <p className="eyebrow">EVENT CHECK-IN</p>
-              <h1>เช็กชื่อหน้างาน</h1>
+              <p className="eyebrow">KINDERGARTEN 1 REGISTRATION</p>
+              <h1 className="system-title">{SYSTEM_NAME}</h1>
             </div>
           </div>
           <div className="staff-menu">
@@ -754,16 +753,16 @@ export default function App() {
             <span className="step-number">1</span>
             <div>
               <h2>ค้นหารหัสผู้สมัคร</h2>
-              <p className="muted">พิมพ์รหัสบางส่วนก็ค้นหาได้ เช่น 70KE</p>
+              <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
             </div>
           </div>
           <div className="search-control">
             <span className="search-icon" aria-hidden="true">⌕</span>
             <input
-              aria-label="ค้นหาด้วยรหัสรับสมัคร"
+              aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
               autoComplete="off"
               autoFocus
-              placeholder="พิมพ์รหัสรับสมัครบางส่วน"
+              placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
@@ -788,7 +787,7 @@ export default function App() {
               ))}
             </div>
           )}
-          {!selected && !searching && normalizeCode(query).length >= 1 && candidates.length === 0 && !error && (
+          {!selected && !searching && query.trim().length > 0 && candidates.length === 0 && !error && (
             <div className="not-found"><span aria-hidden="true">○</span><strong>ไม่พบรหัสนี้ในระบบ</strong></div>
           )}
         </section>

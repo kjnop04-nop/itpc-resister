@@ -128,6 +128,17 @@ button {
   font-weight: 700;
 }
 
+.topbar .system-title {
+  max-width: 500px;
+  font-size: 18px;
+  line-height: 1.4;
+}
+
+.login-card .system-title {
+  font-size: 22px;
+  line-height: 1.4;
+}
+
 .staff-menu {
   gap: 14px;
 }
@@ -837,6 +848,11 @@ button {
 
   .topbar h1 {
     font-size: 19px;
+  }
+
+  .topbar .system-title {
+    max-width: min(45vw, 220px);
+    font-size: 15px;
   }
 
   .staff-menu {
