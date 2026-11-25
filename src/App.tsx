@@ -55,6 +55,60 @@ type DashboardPage = "checkin" | "checked-in";
 const SYSTEM_NAME =
   "ระบบลงทะเบียนเพื่อพิจารณาความพร้อมของนักเรียนเพื่อเข้าศึกษาต่อในระดับอนุบาล 1";
 
+type IconName = "school" | "search" | "check" | "chevron-right" | "camera" | "alert" | "arrow-left";
+
+function Icon({ name, className }: { name: IconName; className?: string }) {
+  return (
+    <svg
+      className={className}
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {name === "school" && (
+        <>
+          <path d="m2 9 10-5 10 5-10 5L2 9Z" />
+          <path d="M6 11v5c3.4 2.7 8.6 2.7 12 0v-5" />
+          <path d="M22 9v6" />
+        </>
+      )}
+      {name === "search" && (
+        <>
+          <circle cx="10.8" cy="10.8" r="6.8" />
+          <path d="m16 16 4.5 4.5" />
+        </>
+      )}
+      {name === "check" && <path d="m5 12 4 4L19 6" />}
+      {name === "chevron-right" && <path d="m9 18 6-6-6-6" />}
+      {name === "camera" && (
+        <>
+          <path d="M14 5h-4L8 8H5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-3l-2-3Z" />
+          <circle cx="12" cy="13" r="3" />
+        </>
+      )}
+      {name === "alert" && (
+        <>
+          <path d="M10.3 4.3 2.2 18.2A1.8 1.8 0 0 0 3.8 21h16.4a1.8 1.8 0 0 0 1.6-2.8L13.7 4.3a2 2 0 0 0-3.4 0Z" />
+          <path d="M12 9v4" />
+          <path d="M12 17h.01" />
+        </>
+      )}
+      {name === "arrow-left" && (
+        <>
+          <path d="m12 19-7-7 7-7" />
+          <path d="M19 12H5" />
+        </>
+      )}
+    </svg>
+  );
+}
+
 function dashboardPageFromHash(): DashboardPage {
   return window.location.hash === "#checked-in" ? "checked-in" : "checkin";
 }
@@ -133,7 +187,7 @@ export default function App() {
         if (active) setSession(currentSession);
       })
       .catch((sessionError: Error) => {
-        if (active) setError(sessionError.message);
+        if (active) setError(`เชื่อมต่อระบบไม่สำเร็จ: ${sessionError.message}`);
       })
       .finally(() => {
         if (active) setAuthLoading(false);
@@ -530,20 +584,20 @@ export default function App() {
   }
 
   if (authLoading) {
-    return <main className="screen"><div className="loading">กำลังเชื่อมต่อระบบ…</div></main>;
+    return <main className="screen"><div className="loading" role="status" aria-live="polite">กำลังเชื่อมต่อระบบ…</div></main>;
   }
 
   if (!session) {
     return (
       <main className="screen login-screen">
         <section className="card login-card">
-          <div className="brand-mark" aria-hidden="true">✓</div>
-          <p className="eyebrow">KINDERGARTEN 1 REGISTRATION</p>
+          <div className="brand-mark"><Icon name="school" /></div>
+          <p className="eyebrow">งานรับสมัครนักเรียน อ.1</p>
           <h1 className="system-title">{SYSTEM_NAME}</h1>
           <p className="muted">
             {authMode === "login" ? "เข้าสู่ระบบสำหรับเจ้าหน้าที่" : "สมัครบัญชีเจ้าหน้าที่ใหม่"}
           </p>
-          {authNotice && <div className="success-toast" role="status">{authNotice}</div>}
+          {authNotice && <div className="success-toast" role="status"><Icon name="check" className="toast-icon" />{authNotice}</div>}
           <form onSubmit={submitAuth} className="login-form">
             {authMode === "register" && (
               <>
@@ -571,7 +625,7 @@ export default function App() {
               onChange={(event) => setPassword(event.target.value)}
               required
             />
-            {error && <p className="error-message" role="alert">{error}</p>}
+            {error && <p className="error-message" role="alert"><Icon name="alert" className="toast-icon" />{error}</p>}
             <button className="button button-primary full-width" type="submit" disabled={busy}>
               {busy
                 ? (authMode === "login" ? "กำลังเข้าสู่ระบบ…" : "กำลังสมัครสมาชิก…")
@@ -604,9 +658,9 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar">
           <div className="brand">
-            <div className="brand-mark" aria-hidden="true">✓</div>
+            <div className="brand-mark"><Icon name="school" /></div>
             <div>
-              <p className="eyebrow">KINDERGARTEN 1 REGISTRATION</p>
+              <p className="eyebrow">งานรับสมัครนักเรียน อ.1</p>
               <h1 className="system-title">{SYSTEM_NAME}</h1>
             </div>
           </div>
@@ -650,8 +704,8 @@ export default function App() {
           </nav>
         )}
 
-        {notice && <div className="success-toast" role="status">✓ {notice}</div>}
-        {error && <div className="error-banner" role="alert">{error}</div>}
+        {notice && <div className="success-toast" role="status"><Icon name="check" className="toast-icon" />{notice}</div>}
+        {error && <div className="error-banner" role="alert"><Icon name="alert" className="toast-icon" />{error}</div>}
 
         {adminOpen ? (
           <section className="card members-card">
@@ -665,10 +719,13 @@ export default function App() {
               </button>
             </div>
             {adminLoading ? (
-              <div className="status status-pending">กำลังโหลดรายชื่อสมาชิก…</div>
-            ) : members.length === 0 ? (
-              <div className="not-found"><strong>ยังไม่มีสมาชิก</strong></div>
-            ) : (
+              <div className="status status-pending" role="status" aria-live="polite">กำลังโหลดรายชื่อสมาชิก…</div>
+            ) : members.length === 0 && !error ? (
+              <div className="not-found">
+                <Icon name="school" className="empty-icon" />
+                <strong>ยังไม่มีบัญชีเจ้าหน้าที่</strong>
+              </div>
+            ) : members.length > 0 ? (
               <div className="member-list">
                 {members.map((member) => (
                   <article className="member-row" key={member.id}>
@@ -742,7 +799,7 @@ export default function App() {
                   </article>
                 ))}
               </div>
-            )}
+            ) : null}
           </section>
         ) : (
           <>
@@ -757,7 +814,7 @@ export default function App() {
             </div>
           </div>
           <div className="search-control">
-            <span className="search-icon" aria-hidden="true">⌕</span>
+            <span className="search-icon"><Icon name="search" /></span>
             <input
               aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
               autoComplete="off"
@@ -773,7 +830,7 @@ export default function App() {
                 setError("");
               }}
             />
-            {searching && <span className="searching-label">กำลังค้นหา…</span>}
+            {searching && <span className="searching-label" role="status" aria-live="polite">กำลังค้นหา…</span>}
           </div>
           {!selected && candidates.length > 0 && (
             <div className="candidate-list" aria-label="ผลการค้นหา">
@@ -782,13 +839,16 @@ export default function App() {
                   <span className="candidate-code">{candidate.application_code}</span>
                   <span className="candidate-name">{candidate.title}{candidate.first_name} {candidate.last_name}</span>
                   <span className="candidate-group">กลุ่ม {candidate.group_number}</span>
-                  <span className="candidate-arrow" aria-hidden="true">›</span>
+                  <span className="candidate-arrow"><Icon name="chevron-right" /></span>
                 </button>
               ))}
             </div>
           )}
           {!selected && !searching && query.trim().length > 0 && candidates.length === 0 && !error && (
-            <div className="not-found"><span aria-hidden="true">○</span><strong>ไม่พบรหัสนี้ในระบบ</strong></div>
+            <div className="not-found">
+              <Icon name="search" className="empty-icon" />
+              <strong>ไม่พบข้อมูลผู้สมัคร ลองตรวจสอบคำค้นอีกครั้ง</strong>
+            </div>
           )}
         </section>
 
@@ -798,7 +858,7 @@ export default function App() {
         <section className="card checked-in-card">
           <div className="checked-in-heading">
             <div className="section-heading">
-              <span className="step-number">✓</span>
+              <span className="step-number"><Icon name="check" /></span>
               <div>
                 <h2>ผู้สมัครที่เช็กอินแล้ว</h2>
                 <p className="muted">ค้นหารายการและยกเลิกได้หากบันทึกผิด</p>
@@ -807,7 +867,7 @@ export default function App() {
             <span className="checked-in-count">{checkinRows.length}{checkinsHasMore ? "+" : ""} รายการ</span>
           </div>
           <div className="search-control checked-in-search">
-            <span className="search-icon" aria-hidden="true">⌕</span>
+            <span className="search-icon"><Icon name="search" /></span>
             <input
               aria-label="ค้นหารายการเช็กอินด้วยรหัสหรือชื่อ"
               autoComplete="off"
@@ -818,14 +878,15 @@ export default function App() {
                 setCheckinSearch(event.target.value);
               }}
             />
-            {checkinsLoading && <span className="searching-label">กำลังค้นหา…</span>}
+            {checkinsLoading && <span className="searching-label" role="status" aria-live="polite">กำลังค้นหา…</span>}
           </div>
 
-          {!checkinsLoading && checkinRows.length === 0 ? (
+          {!checkinsLoading && !error && checkinRows.length === 0 ? (
             <div className="not-found checked-in-empty">
+              <Icon name="check" className="empty-icon" />
               <strong>{checkinSearch ? "ไม่พบรายการเช็กอิน" : "ยังไม่มีผู้สมัครเช็กอิน"}</strong>
             </div>
-          ) : (
+          ) : checkinRows.length > 0 ? (
             <div className="checked-in-list">
               {checkinRows.map((row) => (
                 <article className="checked-in-row" key={row.checkin_id}>
@@ -847,7 +908,7 @@ export default function App() {
                 </article>
               ))}
             </div>
-          )}
+          ) : null}
           {checkinsHasMore && !checkinsLoading && (
             <button
               className="button button-quiet load-more-button"
@@ -883,10 +944,10 @@ export default function App() {
             </div>
 
             {checkinLoading ? (
-              <div className="status status-pending">กำลังตรวจสอบสถานะ…</div>
+              <div className="status status-pending" role="status" aria-live="polite">กำลังตรวจสอบสถานะ…</div>
             ) : checkin ? (
               <div className="status status-checked">
-                <span className="status-icon" aria-hidden="true">✓</span>
+                <span className="status-icon"><Icon name="check" /></span>
                 <div>
                   <strong>เช็กอินไปแล้ว</strong>
                   <span>เวลา {formatCheckinTime(checkin.checked_in_at)}</span>
@@ -896,7 +957,7 @@ export default function App() {
             ) : (
               <>
                 <div className={`status ${onTime ? "status-ready" : "status-late"}`}>
-                  <span className="status-icon" aria-hidden="true">{onTime ? "✓" : "!"}</span>
+                  <span className="status-icon"><Icon name={onTime ? "check" : "alert"} /></span>
                   <div>
                     <strong>{onTime ? "มาถูกรอบ" : "มานอกรอบ"}</strong>
                     <span>{onTime ? "ยังไม่เช็กอิน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${selected.slot_text} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
@@ -932,7 +993,7 @@ export default function App() {
                     </div>
                   ) : (
                     <button className="camera-start" onClick={() => { setError(""); setCameraOpen(true); }}>
-                      <span className="camera-symbol" aria-hidden="true">◎</span>
+                      <Icon name="camera" className="camera-symbol" />
                       <span>เปิดกล้องถ่ายรูป</span>
                     </button>
                   )}
@@ -942,14 +1003,15 @@ export default function App() {
             )}
 
             <button className="back-button" onClick={() => { setSelected(null); setCheckin(null); setPhoto(null); setCameraOpen(false); }}>
-              ← กลับไปผลการค้นหา
+              <Icon name="arrow-left" />
+              <span>กลับไปผลการค้นหา</span>
             </button>
           </section>
         )}
         {!selected && (
           <div className="waiting-hint">
-            <span className="waiting-icon" aria-hidden="true">⌕</span>
-            <p>ค้นหารหัสเพื่อเริ่มเช็กอินผู้สมัครคนถัดไป</p>
+            <Icon name="search" className="waiting-icon" />
+            <p>ค้นหาด้วยรหัสหรือชื่อ แล้วเลือกผู้สมัครที่ต้องการ</p>
           </div>
         )}
           </>
