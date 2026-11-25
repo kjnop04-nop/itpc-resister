@@ -155,6 +155,34 @@ export async function authenticatedStaff(request) {
   return data;
 }
 
+function apiFailureMessage(error) {
+  const code = error && typeof error === "object" && "code" in error
+    ? error.code
+    : undefined;
+
+  if (code === "PGRST202") {
+    return "ฐานข้อมูลยังไม่มีฟังก์ชัน API ที่ต้องใช้ กรุณารัน migrations ล่าสุดตาม README.md";
+  }
+  if (code === "PGRST205" || code === "42P01") {
+    return "ไม่พบตารางข้อมูลใน Supabase กรุณาตรวจ migrations และการนำเข้ารายชื่อผู้สมัคร";
+  }
+  if (code === "PGRST204" || code === "42703") {
+    return "โครงสร้างตาราง Supabase ยังไม่ตรงกับแอป กรุณารัน migrations ล่าสุด";
+  }
+  if (code === "42501") {
+    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบ service-role key และสิทธิ์ฐานข้อมูล";
+  }
+  if (process.env.NODE_ENV !== "production" && error instanceof Error) {
+    return `เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: ${error.message}`;
+  }
+  return "เกิดข้อผิดพลาดในการเชื่อมต่อระบบ";
+}
+
+export function sendApiFailure(response, error, context) {
+  console.error(`${context}:`, error);
+  sendJson(response, 500, { error: apiFailureMessage(error) });
+}
+
 export async function withAuthenticatedStaff(request, response, action) {
   try {
     const staff = await authenticatedStaff(request);
@@ -164,8 +192,7 @@ export async function withAuthenticatedStaff(request, response, action) {
     }
     await action(staff);
   } catch (error) {
-    console.error("Authenticated API request failed:", error);
-    sendJson(response, 500, { error: "เกิดข้อผิดพลาดในการเชื่อมต่อระบบ" });
+    sendApiFailure(response, error, "Authenticated API request failed");
   }
 }
 
