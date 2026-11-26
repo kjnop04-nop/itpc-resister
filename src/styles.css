@@ -1087,6 +1087,38 @@ button {
   margin: 0 0 14px;
 }
 
+.applicant-detail-top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 470px);
+  align-items: start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.applicant-detail-top > .group-back-button {
+  margin: 0;
+}
+
+.applicant-detail-top > .registration-details {
+  width: 100%;
+}
+
+@media (max-width: 780px) {
+  .applicant-detail-top {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.photo-heading {
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 12px;
+}
+
+.photo-heading p {
+  margin: 0;
+}
+
 .camera-panel,
 .photo-preview-wrap {
   overflow: hidden;

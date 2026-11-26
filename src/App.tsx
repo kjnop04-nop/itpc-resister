@@ -1508,35 +1508,36 @@ export default function App() {
         {dashboardPage === "applicant" && selected && (
           <>
           <section className="card registration-card">
-            <button
-              className="back-button group-back-button"
-              type="button"
-              onClick={() => {
-                setSelected(null);
-                setCheckin(null);
-                setPhoto(null);
-                setCheckinNote("");
-                setCameraOpen(false);
-                navigateDashboard(applicantReturnPage);
-              }}
-            >
-              <Icon name="arrow-left" className="back-icon" />
-              <span>{applicantReturnPage === "group" ? "กลับไปหน้ารายชื่อกลุ่ม" : "กลับไปหน้าค้นหา"}</span>
-            </button>
+            <div className="applicant-detail-top">
+              <button
+                className="back-button group-back-button"
+                type="button"
+                onClick={() => {
+                  setSelected(null);
+                  setCheckin(null);
+                  setPhoto(null);
+                  setCheckinNote("");
+                  setCameraOpen(false);
+                  navigateDashboard(applicantReturnPage);
+                }}
+              >
+                <Icon name="arrow-left" className="back-icon" />
+                <span>{applicantReturnPage === "group" ? "กลับไปหน้ารายชื่อกลุ่ม" : "กลับไปหน้าค้นหา"}</span>
+              </button>
+              <div className="registration-details">
+                <div className="registration-code">{selected.application_code}</div>
+                <div className="registration-name">{selected.title}{selected.first_name} {selected.last_name}</div>
+                <div className="registration-session">
+                  กลุ่ม {selected.group_number}
+                  <span className="session-divider">|</span>
+                  รอบ {selected.slot_text}
+                </div>
+              </div>
+            </div>
             <div className="section-heading">
               <div>
                 <h2>ข้อมูลผู้สมัคร</h2>
                 <p className="muted">ตรวจสอบข้อมูลก่อนลงทะเบียน</p>
-              </div>
-            </div>
-
-            <div className="registration-details">
-              <div className="registration-code">{selected.application_code}</div>
-              <div className="registration-name">{selected.title}{selected.first_name} {selected.last_name}</div>
-              <div className="registration-session">
-                กลุ่ม {selected.group_number}
-                <span className="session-divider">|</span>
-                รอบ {selected.slot_text}
               </div>
             </div>
 
@@ -1555,11 +1556,9 @@ export default function App() {
             ) : (
               <>
                 <div className="photo-section">
-                  <div className="section-heading compact-heading">
-                    <div>
-                      <h2>ถ่ายรูปคู่กับรหัส</h2>
-                      <p className="muted">ให้ผู้ปกครองถือบัตรที่มีรหัสให้เห็นในภาพ</p>
-                    </div>
+                  <div className="section-heading compact-heading photo-heading">
+                    <h2>ถ่ายรูปคู่กับรหัส</h2>
+                    <p className="muted">ให้ผู้ปกครองถือบัตรที่มีรหัสให้เห็นในภาพ</p>
                   </div>
 
                   {cameraOpen ? (
