@@ -50,6 +50,11 @@ type CheckinRow = {
   staff_label: string;
 };
 
+type CheckinPhoto = {
+  url: string;
+  row: CheckinRow;
+};
+
 type DashboardPage = "checkin" | "checked-in";
 
 const SYSTEM_NAME =
@@ -159,6 +164,8 @@ export default function App() {
   const [checkinsHasMore, setCheckinsHasMore] = useState(false);
   const [checkinsRefresh, setCheckinsRefresh] = useState(0);
   const [checkinBusyId, setCheckinBusyId] = useState<string | null>(null);
+  const [checkinPhotoLoadingId, setCheckinPhotoLoadingId] = useState<string | null>(null);
+  const [checkinPhoto, setCheckinPhoto] = useState<CheckinPhoto | null>(null);
   const [selected, setSelected] = useState<Registration | null>(null);
   const [checkin, setCheckin] = useState<ExistingCheckin | null>(null);
   const [checkinLoading, setCheckinLoading] = useState(false);
@@ -483,6 +490,21 @@ export default function App() {
       setError(`ยกเลิกเช็กอินไม่สำเร็จ: ${undoError instanceof Error ? undoError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
       setCheckinBusyId(null);
+    }
+  }
+
+  async function viewCheckinPhoto(row: CheckinRow) {
+    setCheckinPhotoLoadingId(row.checkin_id);
+    setError("");
+    try {
+      const { photo_url: url } = await apiRequest<{ photo_url: string }>(
+        `/api/checkins?photo_checkin_id=${encodeURIComponent(row.checkin_id)}`,
+      );
+      setCheckinPhoto({ url, row });
+    } catch (photoError) {
+      setError(`เปิดรูปไม่สำเร็จ: ${photoError instanceof Error ? photoError.message : "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setCheckinPhotoLoadingId(null);
     }
   }
 
@@ -994,7 +1016,7 @@ export default function App() {
               <span className="step-number"><Icon name="check" /></span>
               <div>
                 <h2>ผู้สมัครที่เช็กอินแล้ว</h2>
-                <p className="muted">ค้นหารายการและยกเลิกได้หากบันทึกผิด</p>
+                <p className="muted">ค้นหารายการ ดูรูป และยกเลิกได้หากบันทึกผิด</p>
               </div>
             </div>
             <span className="checked-in-count">{checkinRows.length}{checkinsHasMore ? "+" : ""} รายการ</span>
@@ -1031,13 +1053,22 @@ export default function App() {
                       {formatCheckinTime(row.checked_in_at)} · เช็กอินโดย {row.staff_label}
                     </span>
                   </div>
-                  <button
-                    className="button button-danger"
-                    onClick={() => void undoCheckin(row)}
-                    disabled={checkinBusyId !== null}
-                  >
-                    {checkinBusyId === row.checkin_id ? "กำลังยกเลิก…" : "ยกเลิกเช็กอิน"}
-                  </button>
+                  <div className="checked-in-actions">
+                    <button
+                      className="button button-quiet"
+                      onClick={() => void viewCheckinPhoto(row)}
+                      disabled={checkinPhotoLoadingId !== null}
+                    >
+                      {checkinPhotoLoadingId === row.checkin_id ? "กำลังเปิดรูป…" : "ดูรูป"}
+                    </button>
+                    <button
+                      className="button button-danger"
+                      onClick={() => void undoCheckin(row)}
+                      disabled={checkinBusyId !== null}
+                    >
+                      {checkinBusyId === row.checkin_id ? "กำลังยกเลิก…" : "ยกเลิกเช็กอิน"}
+                    </button>
+                  </div>
                 </article>
               ))}
             </div>
@@ -1144,6 +1175,41 @@ export default function App() {
           </>
         )}
           </>
+        )}
+        {checkinPhoto && (
+          <div
+            className="photo-viewer-backdrop"
+            role="presentation"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setCheckinPhoto(null);
+            }}
+          >
+            <section
+              className="photo-viewer"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="checkin-photo-title"
+            >
+              <div className="photo-viewer-heading">
+                <div>
+                  <h2 id="checkin-photo-title">รูปเช็กอิน {checkinPhoto.row.application_code}</h2>
+                  <p>{checkinPhoto.row.title}{checkinPhoto.row.first_name} {checkinPhoto.row.last_name}</p>
+                </div>
+                <button
+                  className="button button-quiet"
+                  onClick={() => setCheckinPhoto(null)}
+                  aria-label="ปิดรูป"
+                >
+                  ปิด
+                </button>
+              </div>
+              <img
+                className="photo-viewer-image"
+                src={checkinPhoto.url}
+                alt={`รูปเช็กอิน ${checkinPhoto.row.application_code}`}
+              />
+            </section>
+          </div>
         )}
       </div>
     </main>

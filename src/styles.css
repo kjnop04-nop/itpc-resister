@@ -365,6 +365,12 @@ button {
   min-width: 0;
 }
 
+.checked-in-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
 .checked-in-name {
   color: #2f2a32;
   font-size: 15px;
@@ -378,6 +384,52 @@ button {
 
 .checked-in-empty {
   margin-top: 12px;
+}
+
+.photo-viewer-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(31 26 34 / 72%);
+}
+
+.photo-viewer {
+  width: min(100%, 900px);
+  max-height: 92vh;
+  overflow: auto;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+}
+
+.photo-viewer-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.photo-viewer-heading h2,
+.photo-viewer-heading p {
+  margin: 0;
+}
+
+.photo-viewer-heading p {
+  color: var(--muted);
+}
+
+.photo-viewer-image {
+  display: block;
+  width: 100%;
+  max-height: 72vh;
+  border-radius: 10px;
+  object-fit: contain;
+  background: #f6f3ee;
 }
 
 .load-more-button {
@@ -1175,7 +1227,12 @@ button {
     flex-direction: column;
   }
 
-  .checked-in-row > .button {
+  .checked-in-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
+  .checked-in-actions > .button {
     width: 100%;
   }
 

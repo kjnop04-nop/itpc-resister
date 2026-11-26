@@ -20,6 +20,31 @@ export default async function handler(request, response) {
     const client = getAdminClient();
     if (request.method === "GET") {
       const params = new URL(request.url, "http://localhost").searchParams;
+      const photoCheckinId = params.get("photo_checkin_id");
+      if (photoCheckinId) {
+        if (!validUuid(photoCheckinId)) {
+          sendJson(response, 400, { error: "รายการเช็กอินไม่ถูกต้อง" });
+          return;
+        }
+        const { data: checkin, error } = await client
+          .from("checkins")
+          .select("photo_path")
+          .eq("id", photoCheckinId)
+          .is("voided_at", null)
+          .maybeSingle();
+        if (error) throw error;
+        if (!checkin) {
+          sendJson(response, 404, { error: "ไม่พบรูปของรายการเช็กอินนี้" });
+          return;
+        }
+        const { data: photo, error: photoError } = await client.storage
+          .from(PHOTO_BUCKET)
+          .createSignedUrl(checkin.photo_path, 300);
+        if (photoError) throw photoError;
+        sendJson(response, 200, { photo_url: photo.signedUrl });
+        return;
+      }
+
       const registrationId = params.get("registration_id");
       if (registrationId) {
         if (!validUuid(registrationId)) {
