@@ -78,7 +78,7 @@ const ROUND_COUNT = GROUP_COUNT / GROUPS_PER_ROUND;
 const GROUP_NUMBERS = Array.from({ length: GROUP_COUNT }, (_, index) => index + 1);
 
 const SYSTEM_NAME =
-  "ระบบลงทะเบียนเพื่อคัดเลือกนักเรียนระดับอนุบาลปีการศึกษา 2571";
+  "ระบบลงทะเบียนเพื่อคัดเลือกนักเรียนระดับอนุบาลปีการศึกษา 2570";
 
 type IconName = "school" | "search" | "check" | "chevron-right" | "camera" | "alert" | "arrow-left";
 
