@@ -49,7 +49,7 @@ export default async function handler(request, response) {
       for (const checkin of data) {
         const groupNumber = groupByRegistrationId.get(checkin.registration_id);
         if (groupNumber === undefined) {
-          throw new Error("พบรายการเช็กอินที่ไม่มีข้อมูลผู้สมัคร");
+          throw new Error("พบรายการลงทะเบียนที่ไม่มีข้อมูลผู้สมัคร");
         }
         groupsByNumber.get(groupNumber).checked_in += 1;
       }

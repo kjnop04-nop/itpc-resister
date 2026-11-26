@@ -23,7 +23,7 @@ export default async function handler(request, response) {
       const photoCheckinId = params.get("photo_checkin_id");
       if (photoCheckinId) {
         if (!validUuid(photoCheckinId)) {
-          sendJson(response, 400, { error: "รายการเช็กอินไม่ถูกต้อง" });
+          sendJson(response, 400, { error: "รายการลงทะเบียนไม่ถูกต้อง" });
           return;
         }
         const { data: checkin, error } = await client
@@ -34,7 +34,7 @@ export default async function handler(request, response) {
           .maybeSingle();
         if (error) throw error;
         if (!checkin) {
-          sendJson(response, 404, { error: "ไม่พบรูปของรายการเช็กอินนี้" });
+          sendJson(response, 404, { error: "ไม่พบรูปยืนยันการลงทะเบียนนี้" });
           return;
         }
         const { data: photo, error: photoError } = await client.storage
@@ -92,7 +92,7 @@ export default async function handler(request, response) {
     }
     if (request.method === "PATCH") {
       if (!validUuid(body?.checkin_id)) {
-        sendJson(response, 400, { error: "รายการเช็กอินไม่ถูกต้อง" });
+        sendJson(response, 400, { error: "รายการลงทะเบียนไม่ถูกต้อง" });
         return;
       }
       if (
@@ -124,7 +124,7 @@ export default async function handler(request, response) {
     const registrationId = body?.registration_id;
     const photoBase64 = body?.photo_base64;
     if (!validUuid(registrationId) || typeof photoBase64 !== "string") {
-      sendJson(response, 400, { error: "ข้อมูลเช็กอินไม่ครบถ้วน" });
+      sendJson(response, 400, { error: "ข้อมูลการลงทะเบียนไม่ครบถ้วน" });
       return;
     }
     if (
@@ -163,7 +163,7 @@ export default async function handler(request, response) {
         console.error("Could not remove a photo after failed check-in:", cleanupError);
       }
       if (insertError.code === "23505") {
-        sendJson(response, 409, { error: "ผู้สมัครรายนี้เช็กอินไปแล้ว" });
+        sendJson(response, 409, { error: "ผู้สมัครรายนี้ลงทะเบียนแล้ว" });
         return;
       }
       throw insertError;

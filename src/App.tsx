@@ -78,7 +78,7 @@ const ROUND_COUNT = GROUP_COUNT / GROUPS_PER_ROUND;
 const GROUP_NUMBERS = Array.from({ length: GROUP_COUNT }, (_, index) => index + 1);
 
 const SYSTEM_NAME =
-  "ระบบลงทะเบียนเพื่อพิจารณาความพร้อมของนักเรียนเพื่อเข้าศึกษาต่อในระดับอนุบาล 1";
+  "ระบบลงทะเบียนเพื่อคัดเลือกนักเรียนระดับอนุบาลปีการศึกษา 2571";
 
 type IconName = "school" | "search" | "check" | "chevron-right" | "camera" | "alert" | "arrow-left";
 
@@ -385,7 +385,7 @@ export default function App() {
         setCheckinsHasMore(hasMore);
       } catch (listError) {
         if (cancelled) return;
-        setError(`โหลดรายการเช็กอินไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
+        setError(`โหลดรายการลงทะเบียนไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
       } finally {
         if (!cancelled) setCheckinsLoading(false);
       }
@@ -550,7 +550,7 @@ export default function App() {
       setCheckinRows((current) => [...current, ...checkins]);
       setCheckinsHasMore(hasMore);
     } catch (listError) {
-      setError(`โหลดรายการเช็กอินเพิ่มเติมไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
+      setError(`โหลดรายการลงทะเบียนเพิ่มเติมไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
       setCheckinsLoadingMore(false);
     }
@@ -599,7 +599,7 @@ export default function App() {
 
   async function undoCheckin(checkin: CheckinRow) {
     const reason = window.prompt(
-      `ยกเลิกการเช็กอิน ${checkin.application_code} ใช่หรือไม่?\nโปรดระบุเหตุผล (อย่างน้อย 3 ตัวอักษร):`,
+      `ยกเลิกการลงทะเบียน ${checkin.application_code} ใช่หรือไม่?\nโปรดระบุเหตุผล (อย่างน้อย 3 ตัวอักษร):`,
     );
     if (reason === null) return;
     if (reason.trim().length < 3) {
@@ -614,11 +614,11 @@ export default function App() {
         method: "PATCH",
         body: jsonBody({ checkin_id: checkin.checkin_id, reason: reason.trim() }),
       });
-      setNotice(`ยกเลิกเช็กอิน ${checkin.application_code} แล้ว`);
+      setNotice(`ยกเลิกการลงทะเบียน ${checkin.application_code} แล้ว`);
       setCheckinsRefresh((current) => current + 1);
       window.setTimeout(() => setNotice(""), 3000);
     } catch (undoError) {
-      setError(`ยกเลิกเช็กอินไม่สำเร็จ: ${undoError instanceof Error ? undoError.message : "เกิดข้อผิดพลาด"}`);
+      setError(`ยกเลิกการลงทะเบียนไม่สำเร็จ: ${undoError instanceof Error ? undoError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
       setCheckinBusyId(null);
     }
@@ -744,7 +744,7 @@ export default function App() {
           photo_base64: await blobToBase64(photo),
         }),
       });
-      setNotice("เช็กอินแล้ว");
+      setNotice("ลงทะเบียนแล้ว");
       setSelected(null);
       setCheckin(null);
       setPhoto(null);
@@ -756,7 +756,7 @@ export default function App() {
       window.setTimeout(() => setNotice(""), 2500);
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "เกิดข้อผิดพลาด";
-      if (message === "ผู้สมัครรายนี้เช็กอินไปแล้ว") {
+      if (message === "ผู้สมัครรายนี้ลงทะเบียนแล้ว") {
         try {
           const { checkin: existingCheckin } = await apiRequest<{
             checkin: ExistingCheckin | null;
@@ -925,7 +925,7 @@ export default function App() {
               aria-current={dashboardPage === "checked-in" ? "page" : undefined}
               onClick={() => navigateDashboard("checked-in")}
             >
-              ผู้ที่เช็กอินแล้ว
+              ผู้ที่ลงทะเบียนแล้ว
             </button>
           </nav>
         )}
@@ -1132,7 +1132,7 @@ export default function App() {
                     <small>คน</small>
                   </article>
                   <article className="overview-stat overview-stat-checked">
-                    <span>เช็กอินแล้ว</span>
+                    <span>ลงทะเบียนแล้ว</span>
                     <strong>{dashboardSummary.checked_in}</strong>
                     <small>คน</small>
                   </article>
@@ -1142,7 +1142,7 @@ export default function App() {
                     <small>คน</small>
                   </article>
                   <article className="overview-stat">
-                    <span>เช็กอินแล้ว</span>
+                    <span>ลงทะเบียนแล้ว</span>
                     <strong>{Math.round(overallCheckinPercentage)}%</strong>
                     <small>ของผู้สมัครทั้งหมด</small>
                   </article>
@@ -1152,7 +1152,7 @@ export default function App() {
                   <div
                     className="attendance-pie"
                     role="img"
-                    aria-label={`เช็กอินแล้ว ${dashboardSummary.checked_in} จาก ${dashboardSummary.total} คน`}
+                    aria-label={`ลงทะเบียนแล้ว ${dashboardSummary.checked_in} จาก ${dashboardSummary.total} คน`}
                     style={{
                       background: `conic-gradient(#38b34a 0% ${overallCheckinPercentage}%, #e8e3dc ${overallCheckinPercentage}% 100%)`,
                     }}
@@ -1163,10 +1163,10 @@ export default function App() {
                     </div>
                   </div>
                   <div className="attendance-legend">
-                    <h4>สรุปเช็กอินทั้งหมด</h4>
+                    <h4>สรุปการลงทะเบียนทั้งหมด</h4>
                     <div className="attendance-legend-item">
                       <span className="attendance-swatch attendance-swatch-checked" />
-                      <span>เช็กอินแล้ว</span>
+                      <span>ลงทะเบียนแล้ว</span>
                       <strong>{dashboardSummary.checked_in} คน</strong>
                     </div>
                     <div className="attendance-legend-item">
@@ -1207,7 +1207,7 @@ export default function App() {
                                 className={`overview-group-tile group-button-color-${(group.group_number - 1) % GROUPS_PER_ROUND + 1}`}
                                 key={group.group_number}
                                 type="button"
-                                aria-label={`กลุ่ม ${group.group_number}: เช็กอินแล้ว ${group.checked_in} จาก ${group.total} คน`}
+                                aria-label={`กลุ่ม ${group.group_number}: ลงทะเบียนแล้ว ${group.checked_in} จาก ${group.total} คน`}
                                 onClick={() => {
                                   openGroup(group.group_number, "overview");
                                 }}
@@ -1281,7 +1281,7 @@ export default function App() {
                 <header className="applicants-heading">
                   <div>
                     <h2>เลือกกลุ่มผู้สมัคร</h2>
-                    <p className="muted">เลือกกลุ่มเพื่อดูรายชื่อและดำเนินการเช็กอิน</p>
+                    <p className="muted">เลือกกลุ่มเพื่อดูรายชื่อและดำเนินการลงทะเบียน</p>
                   </div>
                 </header>
                 <div className="group-button-grid" aria-label="เลือกกลุ่ม 1 ถึง 30">
@@ -1342,7 +1342,7 @@ export default function App() {
                       <div
                         className="attendance-pie"
                         role="img"
-                        aria-label={`เช็กอินแล้ว ${groupCheckinSummary.checked_in} จาก ${groupCheckinSummary.total} คน`}
+                        aria-label={`ลงทะเบียนแล้ว ${groupCheckinSummary.checked_in} จาก ${groupCheckinSummary.total} คน`}
                         style={{
                           background: `conic-gradient(#38b34a 0% ${checkedInPercentage}%, #e8e3dc ${checkedInPercentage}% 100%)`,
                         }}
@@ -1353,10 +1353,10 @@ export default function App() {
                         </div>
                       </div>
                       <div className="attendance-legend">
-                        <h4>สรุปการเช็กอิน</h4>
+                        <h4>สรุปการลงทะเบียน</h4>
                         <div className="attendance-legend-item">
                           <span className="attendance-swatch attendance-swatch-checked" />
-                          <span>เช็กอินแล้ว</span>
+                          <span>ลงทะเบียนแล้ว</span>
                           <strong>{groupCheckinSummary.checked_in} คน</strong>
                         </div>
                         <div className="attendance-legend-item">
@@ -1382,7 +1382,7 @@ export default function App() {
                           </span>
                           {applicant.checked_in && (
                             <span className="applicant-checkin-status applicant-checkin-done">
-                              เช็กอินแล้ว
+                              ลงทะเบียนแล้ว
                             </span>
                           )}
                           <span className="applicant-slot">รอบ {applicant.slot_text}</span>
@@ -1417,7 +1417,7 @@ export default function App() {
             <div className="section-heading">
               <span className="step-number"><Icon name="check" /></span>
               <div>
-                <h2>ผู้สมัครที่เช็กอินแล้ว</h2>
+                <h2>ผู้สมัครที่ลงทะเบียนแล้ว</h2>
                 <p className="muted">ค้นหารายการ ดูรูป และยกเลิกได้หากบันทึกผิด</p>
               </div>
             </div>
@@ -1426,7 +1426,7 @@ export default function App() {
           <div className="search-control checked-in-search">
             <span className="search-icon"><Icon name="search" /></span>
             <input
-              aria-label="ค้นหารายการเช็กอินด้วยรหัสหรือชื่อ"
+              aria-label="ค้นหารายการลงทะเบียนด้วยรหัสหรือชื่อ"
               autoComplete="off"
               placeholder="ค้นหาด้วยรหัสหรือชื่อผู้สมัคร"
               value={checkinSearch}
@@ -1441,7 +1441,7 @@ export default function App() {
           {!checkinsLoading && !error && checkinRows.length === 0 ? (
             <div className="not-found checked-in-empty">
               <Icon name="check" className="empty-icon" />
-              <strong>{checkinSearch ? "ไม่พบรายการเช็กอิน" : "ยังไม่มีผู้สมัครเช็กอิน"}</strong>
+              <strong>{checkinSearch ? "ไม่พบรายการลงทะเบียน" : "ยังไม่มีผู้สมัครลงทะเบียน"}</strong>
             </div>
           ) : checkinRows.length > 0 ? (
             <div className="checked-in-list">
@@ -1452,7 +1452,7 @@ export default function App() {
                     <span className="checked-in-name">{row.title}{row.first_name} {row.last_name}</span>
                     <span className="candidate-group">กลุ่ม {row.group_number} · รอบ {row.slot_text}</span>
                     <span className="checked-in-meta">
-                      {formatCheckinTime(row.checked_in_at)} · เช็กอินโดย {row.staff_label}
+                      {formatCheckinTime(row.checked_in_at)} · ลงทะเบียนโดย {row.staff_label}
                     </span>
                   </div>
                   <div className="checked-in-actions">
@@ -1468,7 +1468,7 @@ export default function App() {
                       onClick={() => void undoCheckin(row)}
                       disabled={checkinBusyId !== null}
                     >
-                      {checkinBusyId === row.checkin_id ? "กำลังยกเลิก…" : "ยกเลิกเช็กอิน"}
+                      {checkinBusyId === row.checkin_id ? "กำลังยกเลิก…" : "ยกเลิกการลงทะเบียน"}
                     </button>
                   </div>
                 </article>
@@ -1493,7 +1493,7 @@ export default function App() {
             <div className="section-heading">
               <div>
                 <h2>ข้อมูลผู้สมัคร</h2>
-                <p className="muted">ตรวจสอบข้อมูลก่อนเช็กอิน</p>
+                <p className="muted">ตรวจสอบข้อมูลก่อนลงทะเบียน</p>
               </div>
             </div>
 
@@ -1513,7 +1513,7 @@ export default function App() {
               <div className="status status-checked">
                 <span className="status-icon"><Icon name="check" /></span>
                 <div>
-                  <strong>เช็กอินไปแล้ว</strong>
+                  <strong>ลงทะเบียนแล้ว</strong>
                   <span>เวลา {formatCheckinTime(checkin.checked_in_at)}</span>
                   <span>เจ้าหน้าที่ {checkin.staff_label}</span>
                 </div>
@@ -1524,7 +1524,7 @@ export default function App() {
                   <span className="status-icon"><Icon name={onTime ? "check" : "alert"} /></span>
                   <div>
                     <strong>{onTime ? "มาถูกรอบ" : "มานอกรอบ"}</strong>
-                    <span>{onTime ? "ยังไม่เช็กอิน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${selected.slot_text} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
+                    <span>{onTime ? "ยังไม่ลงทะเบียน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${selected.slot_text} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
                   </div>
                 </div>
 
@@ -1550,7 +1550,7 @@ export default function App() {
                       <div className="photo-actions">
                         <button className="button button-quiet" onClick={() => { setPhoto(null); setCameraOpen(true); }}>ถ่ายใหม่</button>
                         <button className="button button-primary" onClick={() => void submitCheckin()} disabled={busy}>
-                          {busy ? "กำลังบันทึก…" : "บันทึกเช็กอิน"}
+                          {busy ? "กำลังบันทึก…" : "บันทึกการลงทะเบียน"}
                         </button>
                       </div>
                     </div>
@@ -1599,7 +1599,7 @@ export default function App() {
             >
               <div className="photo-viewer-heading">
                 <div>
-                  <h2 id="checkin-photo-title">รูปเช็กอิน {checkinPhoto.row.application_code}</h2>
+                  <h2 id="checkin-photo-title">รูปยืนยันการลงทะเบียน {checkinPhoto.row.application_code}</h2>
                   <p>{checkinPhoto.row.title}{checkinPhoto.row.first_name} {checkinPhoto.row.last_name}</p>
                 </div>
                 <button
@@ -1613,7 +1613,7 @@ export default function App() {
               <img
                 className="photo-viewer-image"
                 src={checkinPhoto.url}
-                alt={`รูปเช็กอิน ${checkinPhoto.row.application_code}`}
+                alt={`รูปยืนยันการลงทะเบียน ${checkinPhoto.row.application_code}`}
               />
             </section>
           </div>
