@@ -37,6 +37,7 @@ type Registration = {
 type ExistingCheckin = {
   checked_in_at: string;
   staff_label: string;
+  note: string | null;
 };
 
 type CheckinRow = {
@@ -50,6 +51,7 @@ type CheckinRow = {
   slot_text: string;
   checked_in_at: string;
   staff_label: string;
+  note: string | null;
 };
 
 type CheckinPhoto = {
@@ -77,8 +79,17 @@ const GROUPS_PER_ROUND = 6;
 const ROUND_COUNT = GROUP_COUNT / GROUPS_PER_ROUND;
 const GROUP_NUMBERS = Array.from({ length: GROUP_COUNT }, (_, index) => index + 1);
 
-const SYSTEM_NAME =
-  "ระบบลงทะเบียนเพื่อคัดเลือกนักเรียนระดับอนุบาลปีการศึกษา 2570";
+const SYSTEM_NAME_PREFIX = "ระบบลงทะเบียนเพื่อคัดเลือกนักเรียนระดับอนุบาล";
+const SYSTEM_NAME_YEAR = "ปีการศึกษา 2570";
+
+function SystemTitle() {
+  return (
+    <>
+      {SYSTEM_NAME_PREFIX}{" "}
+      <span className="system-title-year">{SYSTEM_NAME_YEAR}</span>
+    </>
+  );
+}
 
 type IconName = "school" | "search" | "check" | "chevron-right" | "camera" | "alert" | "arrow-left";
 
@@ -212,6 +223,7 @@ export default function App() {
   const [checkinLoading, setCheckinLoading] = useState(false);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [photo, setPhoto] = useState<Blob | null>(null);
+  const [checkinNote, setCheckinNote] = useState("");
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [photoUrl, setPhotoUrl] = useState("");
   const [error, setError] = useState("");
@@ -683,6 +695,7 @@ export default function App() {
     setSelected(registration);
     setCheckin(null);
     setPhoto(null);
+    setCheckinNote("");
     setCameraOpen(false);
     setError("");
     navigateDashboard("applicant");
@@ -742,12 +755,14 @@ export default function App() {
         body: jsonBody({
           registration_id: selected.id,
           photo_base64: await blobToBase64(photo),
+          note: checkinNote.trim(),
         }),
       });
       setNotice("ลงทะเบียนแล้ว");
       setSelected(null);
       setCheckin(null);
       setPhoto(null);
+      setCheckinNote("");
       setCameraOpen(false);
       setQuery("");
       setCandidates([]);
@@ -783,6 +798,7 @@ export default function App() {
       setCandidates([]);
       setCheckin(null);
       setPhoto(null);
+      setCheckinNote("");
       setCameraOpen(false);
       setAdminOpen(false);
       setError("");
@@ -802,6 +818,7 @@ export default function App() {
       setSelected(null);
       setCheckin(null);
       setPhoto(null);
+      setCheckinNote("");
     }
     if (cameraOpen) setCameraOpen(false);
     const hash = page === "group" ? `#group-${groupNumber}` : `#${page}`;
@@ -828,7 +845,7 @@ export default function App() {
       <main className="screen login-screen">
         <section className="card login-card">
           <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
-          <h1 className="system-title">{SYSTEM_NAME}</h1>
+          <h1 className="system-title"><SystemTitle /></h1>
           <p className="muted">เข้าสู่ระบบสำหรับเจ้าหน้าที่</p>
           <form onSubmit={submitAuth} className="login-form">
             <label htmlFor="login-id">ID เจ้าหน้าที่</label>
@@ -879,7 +896,7 @@ export default function App() {
           <div className="brand">
             <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
             <div>
-              <h1 className="system-title">{SYSTEM_NAME}</h1>
+              <h1 className="system-title"><SystemTitle /></h1>
             </div>
           </div>
           <div className="staff-menu">
@@ -1454,6 +1471,7 @@ export default function App() {
                     <span className="checked-in-meta">
                       {formatCheckinTime(row.checked_in_at)} · ลงทะเบียนโดย {row.staff_label}
                     </span>
+                    {row.note && <span className="checked-in-note">หมายเหตุ: {row.note}</span>}
                   </div>
                   <div className="checked-in-actions">
                     <button
@@ -1490,6 +1508,21 @@ export default function App() {
         {dashboardPage === "applicant" && selected && (
           <>
           <section className="card registration-card">
+            <button
+              className="back-button group-back-button"
+              type="button"
+              onClick={() => {
+                setSelected(null);
+                setCheckin(null);
+                setPhoto(null);
+                setCheckinNote("");
+                setCameraOpen(false);
+                navigateDashboard(applicantReturnPage);
+              }}
+            >
+              <Icon name="arrow-left" className="back-icon" />
+              <span>{applicantReturnPage === "group" ? "กลับไปหน้ารายชื่อกลุ่ม" : "กลับไปหน้าค้นหา"}</span>
+            </button>
             <div className="section-heading">
               <div>
                 <h2>ข้อมูลผู้สมัคร</h2>
@@ -1516,18 +1549,11 @@ export default function App() {
                   <strong>ลงทะเบียนแล้ว</strong>
                   <span>เวลา {formatCheckinTime(checkin.checked_in_at)}</span>
                   <span>เจ้าหน้าที่ {checkin.staff_label}</span>
+                  {checkin.note && <span>หมายเหตุ: {checkin.note}</span>}
                 </div>
               </div>
             ) : (
               <>
-                <div className={`status ${onTime ? "status-ready" : "status-late"}`}>
-                  <span className="status-icon"><Icon name={onTime ? "check" : "alert"} /></span>
-                  <div>
-                    <strong>{onTime ? "มาถูกรอบ" : "มานอกรอบ"}</strong>
-                    <span>{onTime ? "ยังไม่ลงทะเบียน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${selected.slot_text} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
-                  </div>
-                </div>
-
                 <div className="photo-section">
                   <div className="section-heading compact-heading">
                     <div>
@@ -1547,6 +1573,16 @@ export default function App() {
                   ) : photo ? (
                     <div className="photo-preview-wrap">
                       <img className="photo-preview" src={photoUrl} alt="ภาพถ่ายคู่กับรหัส" />
+                      <label className="checkin-note-field">
+                        หมายเหตุ (ไม่บังคับ)
+                        <textarea
+                          value={checkinNote}
+                          onChange={(event) => setCheckinNote(event.target.value)}
+                          maxLength={500}
+                          rows={3}
+                          placeholder="เพิ่มหมายเหตุสำหรับรายการนี้"
+                        />
+                      </label>
                       <div className="photo-actions">
                         <button className="button button-quiet" onClick={() => { setPhoto(null); setCameraOpen(true); }}>ถ่ายใหม่</button>
                         <button className="button button-primary" onClick={() => void submitCheckin()} disabled={busy}>
@@ -1562,22 +1598,15 @@ export default function App() {
                   )}
                   <canvas ref={captureCanvasRef} className="visually-hidden" />
                 </div>
+                <div className={`status ${onTime ? "status-ready" : "status-late"}`}>
+                  <span className="status-icon"><Icon name={onTime ? "check" : "alert"} /></span>
+                  <div>
+                    <strong>{onTime ? "มาถูกรอบ" : "มานอกรอบ"}</strong>
+                    <span>{onTime ? "ยังไม่ลงทะเบียน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${selected.slot_text} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
+                  </div>
+                </div>
               </>
             )}
-
-            <button
-              className="back-button"
-              onClick={() => {
-                setSelected(null);
-                setCheckin(null);
-                setPhoto(null);
-                setCameraOpen(false);
-                navigateDashboard(applicantReturnPage);
-              }}
-            >
-              <Icon name="arrow-left" className="back-icon" />
-              <span>{applicantReturnPage === "group" ? "กลับไปหน้ารายชื่อกลุ่ม" : "กลับไปหน้าค้นหา"}</span>
-            </button>
           </section>
           </>
         )}

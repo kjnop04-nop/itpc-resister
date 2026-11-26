@@ -53,7 +53,7 @@ export default async function handler(request, response) {
         }
         const { data, error } = await client
           .from("checkins")
-          .select("checked_in_at, staff_label")
+          .select("checked_in_at, staff_label, note")
           .eq("registration_id", registrationId)
           .is("voided_at", null)
           .maybeSingle();
@@ -123,10 +123,16 @@ export default async function handler(request, response) {
 
     const registrationId = body?.registration_id;
     const photoBase64 = body?.photo_base64;
+    const rawNote = body?.note === undefined || body.note === null ? "" : body.note;
     if (!validUuid(registrationId) || typeof photoBase64 !== "string") {
       sendJson(response, 400, { error: "ข้อมูลการลงทะเบียนไม่ครบถ้วน" });
       return;
     }
+    if (typeof rawNote !== "string" || rawNote.length > 500) {
+      sendJson(response, 400, { error: "หมายเหตุต้องมีความยาวไม่เกิน 500 ตัวอักษร" });
+      return;
+    }
+    const note = rawNote.trim() || null;
     if (
       photoBase64.length > Math.ceil(MAX_PHOTO_BYTES * 4 / 3) + 4 ||
       !/^[A-Za-z0-9+/]+={0,2}$/.test(photoBase64)
@@ -156,6 +162,7 @@ export default async function handler(request, response) {
       checked_in_by: staff.id,
       staff_label: staff.display_name,
       photo_path: path,
+      note,
     });
     if (insertError) {
       const { error: cleanupError } = await client.storage.from(PHOTO_BUCKET).remove([path]);
@@ -171,7 +178,7 @@ export default async function handler(request, response) {
 
     const { data, error: lookupError } = await client
       .from("checkins")
-      .select("checked_in_at, staff_label")
+      .select("checked_in_at, staff_label, note")
       .eq("registration_id", registrationId)
       .is("voided_at", null)
       .single();

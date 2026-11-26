@@ -134,6 +134,10 @@ button {
   line-height: 1.55;
 }
 
+.system-title-year {
+  white-space: nowrap;
+}
+
 .login-card .system-title {
   font-size: 22px;
   line-height: 1.4;
@@ -934,7 +938,7 @@ button {
 }
 
 .registration-details {
-  padding: 24px 24px 22px;
+  padding: 20px 22px 18px;
   border: 1px solid #e9e3dc;
   border-radius: 13px;
   background: #fbf8f2;
@@ -942,7 +946,7 @@ button {
 
 .registration-code {
   color: #2f2a32;
-  font-size: clamp(29px, 7vw, 40px);
+  font-size: clamp(24px, 5vw, 30px);
   font-weight: 700;
   letter-spacing: 0.04em;
   line-height: 1.15;
@@ -951,7 +955,7 @@ button {
 .registration-name {
   margin-top: 8px;
   color: #2f2a32;
-  font-size: clamp(20px, 4vw, 25px);
+  font-size: clamp(18px, 3.5vw, 21px);
   font-weight: 600;
   line-height: 1.45;
 }
@@ -1079,6 +1083,10 @@ button {
   color: var(--accent);
 }
 
+.registration-card > .group-back-button {
+  margin: 0 0 14px;
+}
+
 .camera-panel,
 .photo-preview-wrap {
   overflow: hidden;
@@ -1091,17 +1099,66 @@ button {
 .photo-preview {
   display: block;
   width: 100%;
+  margin: 0 auto;
   max-height: min(62vh, 480px);
   object-fit: contain;
   background: #f1eee9;
 }
 
-.camera-actions,
-.photo-actions {
-  justify-content: flex-end;
+.camera-preview {
+  max-width: 720px;
+}
+
+.camera-actions {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
   gap: 10px;
   padding: 13px;
   background: #fff;
+}
+
+.camera-actions > :first-child {
+  justify-self: start;
+}
+
+.camera-actions > :last-child {
+  grid-column: 2;
+}
+
+.photo-actions {
+  justify-content: center;
+  gap: 10px;
+  padding: 13px;
+  background: #fff;
+}
+
+.checkin-note-field {
+  display: grid;
+  gap: 6px;
+  margin: 14px 13px 0;
+  color: #514b55;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.checkin-note-field textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #2f2a32;
+  font: inherit;
+  font-weight: 400;
+}
+
+.checkin-note-field textarea:focus-visible {
+  border-color: var(--accent);
+  outline: 3px solid #e6d9ec;
+  outline-offset: 1px;
 }
 
 .button {
@@ -1175,6 +1232,12 @@ button {
   background: none;
   color: #514b55;
   font-size: 14px;
+}
+
+.checked-in-note {
+  color: #514b55;
+  font-size: 14px;
+  overflow-wrap: anywhere;
 }
 
 .back-icon {
@@ -1538,7 +1601,7 @@ button {
   }
 
   .topbar .system-title {
-    max-width: min(45vw, 220px);
+    max-width: calc(100vw - 88px);
     font-size: 16px;
   }
 
