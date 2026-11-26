@@ -32,7 +32,8 @@ export default async function handler(request, response) {
       }
 
       const pageSize = 50;
-      let registrationQuery = getAdminClient()
+      const client = getAdminClient();
+      let registrationQuery = client
         .from("registrations")
         .select("id, application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start, slot_end")
         .order("group_number", { ascending: true })
@@ -44,9 +45,34 @@ export default async function handler(request, response) {
       if (error) throw error;
 
       const registrations = data || [];
+      let checkinSummary;
+      if (groupNumber !== null) {
+        const [
+          { count: totalCount, error: totalError },
+          { count: checkedInCount, error: checkedInError },
+        ] = await Promise.all([
+          client
+            .from("registrations")
+            .select("id", { count: "exact", head: true })
+            .eq("group_number", groupNumber),
+          client
+            .from("checkins")
+            .select("id, registrations!inner(group_number)", { count: "exact", head: true })
+            .eq("registrations.group_number", groupNumber)
+            .is("voided_at", null),
+        ]);
+        if (totalError) throw totalError;
+        if (checkedInError) throw checkedInError;
+        checkinSummary = {
+          total: totalCount || 0,
+          checked_in: checkedInCount || 0,
+        };
+      }
+
       sendJson(response, 200, {
         registrations: registrations.slice(0, pageSize),
         has_more: registrations.length > pageSize,
+        ...(checkinSummary ? { checkin_summary: checkinSummary } : {}),
       });
       return;
     }

@@ -55,6 +55,11 @@ type CheckinPhoto = {
   row: CheckinRow;
 };
 
+type GroupCheckinSummary = {
+  total: number;
+  checked_in: number;
+};
+
 type DashboardPage = "checkin" | "checked-in";
 
 const GROUP_COUNT = 30;
@@ -158,6 +163,7 @@ export default function App() {
   const [searching, setSearching] = useState(false);
   const [browseApplicants, setBrowseApplicants] = useState<Registration[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [groupCheckinSummary, setGroupCheckinSummary] = useState<GroupCheckinSummary | null>(null);
   const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [applicantsLoadingMore, setApplicantsLoadingMore] = useState(false);
   const [applicantsHasMore, setApplicantsHasMore] = useState(false);
@@ -282,16 +288,19 @@ export default function App() {
 
     let cancelled = false;
     setApplicantsLoading(true);
+    setGroupCheckinSummary(null);
     setError("");
 
     void apiRequest<{
       registrations: Registration[];
       has_more: boolean;
+      checkin_summary: GroupCheckinSummary;
     }>(`/api/registrations?group_number=${selectedGroup}&offset=0`)
-      .then(({ registrations, has_more: hasMore }) => {
+      .then(({ registrations, has_more: hasMore, checkin_summary: summary }) => {
         if (cancelled) return;
         setBrowseApplicants(registrations);
         setApplicantsHasMore(hasMore);
+        setGroupCheckinSummary(summary);
       })
       .catch((listError) => {
         if (cancelled) return;
@@ -305,7 +314,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [session, adminOpen, dashboardPage, query, selectedGroup]);
+  }, [session, adminOpen, dashboardPage, query, selectedGroup, checkinsRefresh]);
 
   useEffect(() => {
     if (!session || adminOpen || dashboardPage !== "checked-in") return;
@@ -491,6 +500,7 @@ export default function App() {
   function chooseGroup(groupNumber: number | null) {
     selectedGroupRef.current = groupNumber;
     setSelectedGroup(groupNumber);
+    setGroupCheckinSummary(null);
     setApplicantsLoading(groupNumber !== null);
     setBrowseApplicants([]);
     setApplicantsHasMore(false);
@@ -763,6 +773,9 @@ export default function App() {
   const onTime = selected
     ? isWithinSlot(selected.slot_start, selected.slot_end, currentBangkokMinutes(new Date(clock)))
     : false;
+  const checkedInPercentage = groupCheckinSummary && groupCheckinSummary.total > 0
+    ? (groupCheckinSummary.checked_in / groupCheckinSummary.total) * 100
+    : 0;
   return (
     <main className="screen">
       <div className="app-shell">
@@ -999,7 +1012,39 @@ export default function App() {
                   <div className="status status-pending group-loading" role="status" aria-live="polite">
                     กำลังโหลดรายชื่อกลุ่ม {selectedGroup}…
                   </div>
-                ) : browseApplicants.length > 0 ? (
+                ) : (
+                  <>
+                {groupCheckinSummary && (
+                  <div className="group-attendance">
+                    <div
+                      className="attendance-pie"
+                      role="img"
+                      aria-label={`เช็กอินแล้ว ${groupCheckinSummary.checked_in} จาก ${groupCheckinSummary.total} คน`}
+                      style={{
+                        background: `conic-gradient(#38b34a 0% ${checkedInPercentage}%, #e8e3dc ${checkedInPercentage}% 100%)`,
+                      }}
+                    >
+                      <div className="attendance-pie-center">
+                        <strong>{groupCheckinSummary.checked_in}</strong>
+                        <span>จาก {groupCheckinSummary.total} คน</span>
+                      </div>
+                    </div>
+                    <div className="attendance-legend">
+                      <h4>สรุปการเช็กอิน</h4>
+                      <div className="attendance-legend-item">
+                        <span className="attendance-swatch attendance-swatch-checked" />
+                        <span>เช็กอินแล้ว</span>
+                        <strong>{groupCheckinSummary.checked_in} คน</strong>
+                      </div>
+                      <div className="attendance-legend-item">
+                        <span className="attendance-swatch attendance-swatch-pending" />
+                        <span>ยังไม่มา</span>
+                        <strong>{groupCheckinSummary.total - groupCheckinSummary.checked_in} คน</strong>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {browseApplicants.length > 0 ? (
                   <div className="applicant-list">
                     {browseApplicants.map((applicant) => (
                       <button
@@ -1023,6 +1068,8 @@ export default function App() {
                     <strong>ไม่พบรายชื่อในกลุ่มนี้</strong>
                   </div>
                 ) : null}
+                  </>
+                )}
               </section>
             )}
 
