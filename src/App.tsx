@@ -827,7 +827,7 @@ export default function App() {
     return (
       <main className="screen login-screen">
         <section className="card login-card">
-          <div className="brand-mark"><Icon name="school" /></div>
+          <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
           <h1 className="system-title">{SYSTEM_NAME}</h1>
           <p className="muted">เข้าสู่ระบบสำหรับเจ้าหน้าที่</p>
           <form onSubmit={submitAuth} className="login-form">
@@ -877,7 +877,7 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar">
           <div className="brand">
-            <div className="brand-mark"><Icon name="school" /></div>
+            <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
             <div>
               <h1 className="system-title">{SYSTEM_NAME}</h1>
             </div>
