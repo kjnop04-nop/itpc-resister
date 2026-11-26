@@ -1106,7 +1106,7 @@ export default function App() {
           <section className="card overview-card">
             <header className="overview-heading">
               <div>
-                <h2>ภาพรวมการเช็กอิน</h2>
+                <h2>ภาพรวมการลงทะเบียน</h2>
                 <p className="muted">สรุปผู้สมัครทั้งหมดและความคืบหน้าของแต่ละรอบ</p>
               </div>
               <button
@@ -1137,7 +1137,7 @@ export default function App() {
                     <small>คน</small>
                   </article>
                   <article className="overview-stat overview-stat-pending">
-                    <span>ยังไม่มา</span>
+                    <span>ยังไม่ลงทะเบียน</span>
                     <strong>{dashboardSummary.total - dashboardSummary.checked_in}</strong>
                     <small>คน</small>
                   </article>
@@ -1171,7 +1171,7 @@ export default function App() {
                     </div>
                     <div className="attendance-legend-item">
                       <span className="attendance-swatch attendance-swatch-pending" />
-                      <span>ยังไม่มา</span>
+                      <span>ยังไม่ลงทะเบียน</span>
                       <strong>{dashboardSummary.total - dashboardSummary.checked_in} คน</strong>
                     </div>
                   </div>
@@ -1361,7 +1361,7 @@ export default function App() {
                         </div>
                         <div className="attendance-legend-item">
                           <span className="attendance-swatch attendance-swatch-pending" />
-                          <span>ยังไม่มา</span>
+                          <span>ยังไม่ลงทะเบียน</span>
                           <strong>{groupCheckinSummary.total - groupCheckinSummary.checked_in} คน</strong>
                         </div>
                       </div>
