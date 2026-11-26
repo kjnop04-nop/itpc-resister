@@ -1190,7 +1190,7 @@ export default function App() {
                     return (
                       <section className="overview-round" key={firstGroup}>
                         <header className="overview-round-heading">
-                          <h3>รอบ {roundIndex + 1}</h3>
+                          <h3>รอบที่ {roundIndex + 1}</h3>
                           <p>
                             ลงทะเบียน {schedule.registrationTime}
                             <span> · </span>
