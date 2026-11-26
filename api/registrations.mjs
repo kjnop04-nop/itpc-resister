@@ -45,6 +45,21 @@ export default async function handler(request, response) {
       if (error) throw error;
 
       const registrations = data || [];
+      let listedRegistrations = registrations.slice(0, pageSize);
+      if (groupNumber !== null && listedRegistrations.length > 0) {
+        const { data: activeCheckins, error: activeCheckinsError } = await client
+          .from("checkins")
+          .select("registration_id")
+          .in("registration_id", listedRegistrations.map(({ id }) => id))
+          .is("voided_at", null);
+        if (activeCheckinsError) throw activeCheckinsError;
+        const checkedInIds = new Set(activeCheckins.map(({ registration_id }) => registration_id));
+        listedRegistrations = listedRegistrations.map((registration) => ({
+          ...registration,
+          checked_in: checkedInIds.has(registration.id),
+        }));
+      }
+
       let checkinSummary;
       if (groupNumber !== null) {
         const [
@@ -70,7 +85,7 @@ export default async function handler(request, response) {
       }
 
       sendJson(response, 200, {
-        registrations: registrations.slice(0, pageSize),
+        registrations: listedRegistrations,
         has_more: registrations.length > pageSize,
         ...(checkinSummary ? { checkin_summary: checkinSummary } : {}),
       });

@@ -30,6 +30,7 @@ type Registration = {
   slot_text: string;
   slot_start: string;
   slot_end: string;
+  checked_in?: boolean;
 };
 
 type ExistingCheckin = {
@@ -1048,7 +1049,7 @@ export default function App() {
                   <div className="applicant-list">
                     {browseApplicants.map((applicant) => (
                       <button
-                        className="applicant-row"
+                        className={`applicant-row ${applicant.checked_in ? "applicant-row-checked-in" : ""}`}
                         key={applicant.id}
                         type="button"
                         onClick={() => void chooseRegistration(applicant)}
@@ -1057,6 +1058,13 @@ export default function App() {
                         <span className="applicant-name">
                           {applicant.title}{applicant.first_name} {applicant.last_name}
                         </span>
+                        {applicant.checked_in && (
+                          <span
+                            className="applicant-checkin-status applicant-checkin-done"
+                          >
+                            เช็กอินแล้ว
+                          </span>
+                        )}
                         <span className="applicant-slot">รอบ {applicant.slot_text}</span>
                         <span className="candidate-arrow"><Icon name="chevron-right" /></span>
                       </button>
