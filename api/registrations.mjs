@@ -15,6 +15,16 @@ export default async function handler(request, response) {
     }
 
     if (!query) {
+      const groupNumberParam = params.get("group_number");
+      const groupNumber = groupNumberParam === null ? null : Number(groupNumberParam);
+      if (
+        groupNumberParam !== null &&
+        (!Number.isInteger(groupNumber) || groupNumber < 1 || groupNumber > 30)
+      ) {
+        sendJson(response, 400, { error: "หมายเลขกลุ่มไม่ถูกต้อง" });
+        return;
+      }
+
       const offset = Number(params.get("offset") || 0);
       if (!Number.isSafeInteger(offset) || offset < 0) {
         sendJson(response, 400, { error: "ตำแหน่งรายการไม่ถูกต้อง" });
@@ -22,12 +32,15 @@ export default async function handler(request, response) {
       }
 
       const pageSize = 50;
-      const { data, error } = await getAdminClient()
+      let registrationQuery = getAdminClient()
         .from("registrations")
         .select("id, application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start, slot_end")
         .order("group_number", { ascending: true })
-        .order("application_code", { ascending: true })
-        .range(offset, offset + pageSize);
+        .order("application_code", { ascending: true });
+      if (groupNumber !== null) {
+        registrationQuery = registrationQuery.eq("group_number", groupNumber);
+      }
+      const { data, error } = await registrationQuery.range(offset, offset + pageSize);
       if (error) throw error;
 
       const registrations = data || [];

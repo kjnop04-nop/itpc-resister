@@ -57,6 +57,9 @@ type CheckinPhoto = {
 
 type DashboardPage = "checkin" | "checked-in";
 
+const GROUP_COUNT = 30;
+const GROUP_NUMBERS = Array.from({ length: GROUP_COUNT }, (_, index) => index + 1);
+
 const SYSTEM_NAME =
   "ระบบลงทะเบียนเพื่อพิจารณาความพร้อมของนักเรียนเพื่อเข้าศึกษาต่อในระดับอนุบาล 1";
 
@@ -154,7 +157,8 @@ export default function App() {
   const [candidates, setCandidates] = useState<Registration[]>([]);
   const [searching, setSearching] = useState(false);
   const [browseApplicants, setBrowseApplicants] = useState<Registration[]>([]);
-  const [applicantsLoading, setApplicantsLoading] = useState(true);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [applicantsLoadingMore, setApplicantsLoadingMore] = useState(false);
   const [applicantsHasMore, setApplicantsHasMore] = useState(false);
   const [checkinSearch, setCheckinSearch] = useState("");
@@ -179,6 +183,7 @@ export default function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
   const checkinSearchRef = useRef(checkinSearch);
+  const selectedGroupRef = useRef(selectedGroup);
 
   useEffect(() => {
     if (!photo) {
@@ -264,20 +269,25 @@ export default function App() {
   }, [query, session, dashboardPage]);
 
   useEffect(() => {
-    if (!session || adminOpen || dashboardPage !== "checkin" || query.trim()) {
+    if (
+      !session ||
+      adminOpen ||
+      dashboardPage !== "checkin" ||
+      query.trim() ||
+      selectedGroup === null
+    ) {
       setApplicantsLoading(false);
       return;
     }
 
     let cancelled = false;
     setApplicantsLoading(true);
-    setApplicantsHasMore(false);
     setError("");
 
     void apiRequest<{
       registrations: Registration[];
       has_more: boolean;
-    }>("/api/registrations?offset=0")
+    }>(`/api/registrations?group_number=${selectedGroup}&offset=0`)
       .then(({ registrations, has_more: hasMore }) => {
         if (cancelled) return;
         setBrowseApplicants(registrations);
@@ -295,7 +305,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [session, adminOpen, dashboardPage, query]);
+  }, [session, adminOpen, dashboardPage, query, selectedGroup]);
 
   useEffect(() => {
     if (!session || adminOpen || dashboardPage !== "checked-in") return;
@@ -448,7 +458,13 @@ export default function App() {
   }
 
   async function loadMoreApplicants() {
-    if (applicantsLoadingMore || !applicantsHasMore || query.trim()) return;
+    const groupNumber = selectedGroup;
+    if (
+      applicantsLoadingMore ||
+      !applicantsHasMore ||
+      query.trim() ||
+      groupNumber === null
+    ) return;
 
     setApplicantsLoadingMore(true);
     setError("");
@@ -456,14 +472,30 @@ export default function App() {
       const { registrations, has_more: hasMore } = await apiRequest<{
         registrations: Registration[];
         has_more: boolean;
-      }>(`/api/registrations?offset=${browseApplicants.length}`);
+      }>(
+        `/api/registrations?group_number=${groupNumber}&offset=${browseApplicants.length}`,
+      );
+      if (selectedGroupRef.current !== groupNumber) return;
       setBrowseApplicants((current) => [...current, ...registrations]);
       setApplicantsHasMore(hasMore);
     } catch (listError) {
+      if (selectedGroupRef.current !== groupNumber) return;
       setError(`โหลดรายชื่อผู้สมัครเพิ่มเติมไม่สำเร็จ: ${listError instanceof Error ? listError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
-      setApplicantsLoadingMore(false);
+      if (selectedGroupRef.current === groupNumber) {
+        setApplicantsLoadingMore(false);
+      }
     }
+  }
+
+  function chooseGroup(groupNumber: number | null) {
+    selectedGroupRef.current = groupNumber;
+    setSelectedGroup(groupNumber);
+    setApplicantsLoading(groupNumber !== null);
+    setBrowseApplicants([]);
+    setApplicantsHasMore(false);
+    setApplicantsLoadingMore(false);
+    setError("");
   }
 
   async function undoCheckin(checkin: CheckinRow) {
@@ -731,16 +763,6 @@ export default function App() {
   const onTime = selected
     ? isWithinSlot(selected.slot_start, selected.slot_end, currentBangkokMinutes(new Date(clock)))
     : false;
-  const groupedApplicants = new Map<number, Registration[]>();
-  for (const applicant of browseApplicants) {
-    const group = groupedApplicants.get(applicant.group_number) || [];
-    group.push(applicant);
-    groupedApplicants.set(applicant.group_number, group);
-  }
-  const applicantGroups = [...groupedApplicants.entries()].sort(
-    ([firstGroup], [secondGroup]) => firstGroup - secondGroup,
-  );
-
   return (
     <main className="screen">
       <div className="app-shell">
@@ -893,11 +915,88 @@ export default function App() {
           <>
         {dashboardPage === "checkin" && (
           <>
+        {!selected && !query.trim() && (
+          <section className="card applicants-card" aria-label="รายชื่อผู้สมัคร">
+            <header className="applicants-heading">
+              <div>
+                <h2>เลือกกลุ่มผู้สมัคร</h2>
+                <p className="muted">เลือกกลุ่มเพื่อดูรายชื่อและดำเนินการเช็กอิน</p>
+              </div>
+            </header>
+
+            <div className="group-button-grid" aria-label="เลือกกลุ่ม 1 ถึง 30">
+              {GROUP_NUMBERS.map((groupNumber) => (
+                <button
+                  className={`group-button group-button-color-${(groupNumber - 1) % 6 + 1}`}
+                  key={groupNumber}
+                  type="button"
+                  aria-pressed={selectedGroup === groupNumber}
+                  onClick={() => chooseGroup(selectedGroup === groupNumber ? null : groupNumber)}
+                >
+                  กลุ่ม {groupNumber}
+                </button>
+              ))}
+            </div>
+
+            {selectedGroup !== null && (
+              <section className="applicant-group selected-applicant-group">
+                <header className="applicant-group-heading">
+                  <h3>รายชื่อกลุ่ม {selectedGroup}</h3>
+                  {!applicantsLoading && browseApplicants.length > 0 && (
+                    <span className="group-applicant-count">
+                      {browseApplicants.length}{applicantsHasMore ? "+" : ""} รายชื่อ
+                    </span>
+                  )}
+                </header>
+                {applicantsLoading ? (
+                  <div className="status status-pending group-loading" role="status" aria-live="polite">
+                    กำลังโหลดรายชื่อกลุ่ม {selectedGroup}…
+                  </div>
+                ) : browseApplicants.length > 0 ? (
+                  <div className="applicant-list">
+                    {browseApplicants.map((applicant) => (
+                      <button
+                        className="applicant-row"
+                        key={applicant.id}
+                        type="button"
+                        onClick={() => void chooseRegistration(applicant)}
+                      >
+                        <span className="candidate-code">{applicant.application_code}</span>
+                        <span className="applicant-name">
+                          {applicant.title}{applicant.first_name} {applicant.last_name}
+                        </span>
+                        <span className="applicant-slot">รอบ {applicant.slot_text}</span>
+                        <span className="candidate-arrow"><Icon name="chevron-right" /></span>
+                      </button>
+                    ))}
+                  </div>
+                ) : !error ? (
+                  <div className="not-found group-empty">
+                    <Icon name="search" className="empty-icon" />
+                    <strong>ไม่พบรายชื่อในกลุ่มนี้</strong>
+                  </div>
+                ) : null}
+              </section>
+            )}
+
+            {selectedGroup !== null && applicantsHasMore && !applicantsLoading && (
+              <button
+                className="button button-quiet load-more-button"
+                type="button"
+                onClick={() => void loadMoreApplicants()}
+                disabled={applicantsLoadingMore}
+              >
+                {applicantsLoadingMore ? "กำลังโหลด…" : "โหลดรายชื่อเพิ่มเติม"}
+              </button>
+            )}
+          </section>
+        )}
+
         <section className="card search-card">
           <div className="section-heading">
             <span className="step-number">1</span>
             <div>
-            <h2>ค้นหาผู้สมัคร</h2>
+              <h2>ค้นหาผู้สมัคร</h2>
               <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
             </div>
           </div>
@@ -906,7 +1005,6 @@ export default function App() {
             <input
               aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
               autoComplete="off"
-              autoFocus
               placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
               value={query}
               onChange={(event) => {
@@ -939,73 +1037,6 @@ export default function App() {
             </div>
           )}
         </section>
-
-        {!selected && !query.trim() && (
-          <section className="card applicants-card" aria-label="รายชื่อผู้สมัคร">
-            <header className="applicants-heading">
-              <div>
-                <h2>รายชื่อผู้สมัคร</h2>
-                <p className="muted">เลือกชื่อเพื่อดูข้อมูลและดำเนินการเช็กอิน</p>
-              </div>
-              {browseApplicants.length > 0 && (
-                <span className="checked-in-count">แสดง {browseApplicants.length} รายการ</span>
-              )}
-            </header>
-
-            {applicantsLoading ? (
-              <div className="status status-pending" role="status" aria-live="polite">
-                กำลังโหลดรายชื่อผู้สมัคร…
-              </div>
-            ) : browseApplicants.length === 0 && !error ? (
-              <div className="not-found">
-                <Icon name="search" className="empty-icon" />
-                <strong>ยังไม่มีข้อมูลผู้สมัคร</strong>
-              </div>
-            ) : browseApplicants.length > 0 ? (
-              <div className="applicant-groups">
-                {applicantGroups.map(([groupNumber, groupApplicants]) => (
-                  <section
-                    className="applicant-group"
-                    key={groupNumber}
-                    aria-labelledby={`applicant-group-${groupNumber}`}
-                  >
-                    <header className="applicant-group-heading">
-                      <h3 id={`applicant-group-${groupNumber}`}>กลุ่ม {groupNumber}</h3>
-                    </header>
-                    <div className="applicant-list">
-                      {groupApplicants.map((applicant) => (
-                        <button
-                          className="applicant-row"
-                          key={applicant.id}
-                          type="button"
-                          onClick={() => void chooseRegistration(applicant)}
-                        >
-                          <span className="candidate-code">{applicant.application_code}</span>
-                          <span className="applicant-name">
-                            {applicant.title}{applicant.first_name} {applicant.last_name}
-                          </span>
-                          <span className="applicant-slot">รอบ {applicant.slot_text}</span>
-                          <span className="candidate-arrow"><Icon name="chevron-right" /></span>
-                        </button>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
-            ) : null}
-
-            {applicantsHasMore && !applicantsLoading && (
-              <button
-                className="button button-quiet load-more-button"
-                type="button"
-                onClick={() => void loadMoreApplicants()}
-                disabled={applicantsLoadingMore}
-              >
-                {applicantsLoadingMore ? "กำลังโหลด…" : "โหลดรายชื่อเพิ่มเติม"}
-              </button>
-            )}
-          </section>
-        )}
 
           </>
         )}
