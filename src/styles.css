@@ -127,14 +127,6 @@ button {
   color: #211b24;
 }
 
-.eyebrow {
-  margin: 0 0 2px;
-  color: #5f5664;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-}
-
 .topbar h1,
 .login-card h1,
 .setup-card h1 {
@@ -1192,6 +1184,13 @@ button {
   background: none;
   color: #514b55;
   font-size: 14px;
+}
+
+.back-icon {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  stroke-width: 2.2;
 }
 
 .back-button:hover {

@@ -828,7 +828,6 @@ export default function App() {
       <main className="screen login-screen">
         <section className="card login-card">
           <div className="brand-mark"><Icon name="school" /></div>
-          <p className="eyebrow">งานรับสมัครนักเรียน อ.1</p>
           <h1 className="system-title">{SYSTEM_NAME}</h1>
           <p className="muted">เข้าสู่ระบบสำหรับเจ้าหน้าที่</p>
           <form onSubmit={submitAuth} className="login-form">
@@ -880,7 +879,6 @@ export default function App() {
           <div className="brand">
             <div className="brand-mark"><Icon name="school" /></div>
             <div>
-              <p className="eyebrow">งานรับสมัครนักเรียน อ.1</p>
               <h1 className="system-title">{SYSTEM_NAME}</h1>
             </div>
           </div>
@@ -1309,7 +1307,7 @@ export default function App() {
               type="button"
               onClick={() => navigateDashboard("checkin")}
             >
-              <Icon name="arrow-left" />
+              <Icon name="arrow-left" className="back-icon" />
               <span>กลับไปหน้าค้นหา</span>
             </button>
             <section className="applicant-group selected-applicant-group">
@@ -1577,7 +1575,7 @@ export default function App() {
                 navigateDashboard(applicantReturnPage);
               }}
             >
-              <Icon name="arrow-left" />
+              <Icon name="arrow-left" className="back-icon" />
               <span>{applicantReturnPage === "group" ? "กลับไปหน้ารายชื่อกลุ่ม" : "กลับไปหน้าค้นหา"}</span>
             </button>
           </section>
