@@ -4,16 +4,17 @@ import { apiRequest, jsonBody } from "./lib/api";
 
 type StaffSession = {
   id: string;
-  email: string;
+  email: string | null;
   display_name: string;
-  role: "admin" | "staff";
+  role: "superadmin" | "admin" | "staff";
 };
 
 type StaffAccount = {
   id: string;
-  email: string;
+  login_id: string;
+  email: string | null;
   display_name: string;
-  role: "admin" | "staff";
+  role: "superadmin" | "admin" | "staff";
   status: "pending" | "active" | "rejected" | "suspended";
   created_at: string;
   last_login_at: string | null;
@@ -61,9 +62,19 @@ type GroupCheckinSummary = {
   checked_in: number;
 };
 
-type DashboardPage = "checkin" | "checked-in";
+type DashboardGroupSummary = GroupCheckinSummary & {
+  group_number: number;
+};
+
+type DashboardSummary = GroupCheckinSummary & {
+  groups: DashboardGroupSummary[];
+};
+
+type DashboardPage = "overview" | "checkin" | "group" | "applicant" | "checked-in";
 
 const GROUP_COUNT = 30;
+const GROUPS_PER_ROUND = 6;
+const ROUND_COUNT = GROUP_COUNT / GROUPS_PER_ROUND;
 const GROUP_NUMBERS = Array.from({ length: GROUP_COUNT }, (_, index) => index + 1);
 
 const SYSTEM_NAME =
@@ -123,8 +134,21 @@ function Icon({ name, className }: { name: IconName; className?: string }) {
   );
 }
 
+function groupNumberFromHash(): number | null {
+  const match = window.location.hash.match(/^#group-(\d+)$/);
+  if (!match) return null;
+  const groupNumber = Number(match[1]);
+  return Number.isInteger(groupNumber) && groupNumber >= 1 && groupNumber <= GROUP_COUNT
+    ? groupNumber
+    : null;
+}
+
 function dashboardPageFromHash(): DashboardPage {
-  return window.location.hash === "#checked-in" ? "checked-in" : "checkin";
+  if (window.location.hash === "#checked-in") return "checked-in";
+  if (window.location.hash === "#applicant") return "applicant";
+  if (window.location.hash === "#checkin") return "checkin";
+  if (groupNumberFromHash() !== null) return "group";
+  return "overview";
 }
 
 function formatCheckinTime(value: string) {
@@ -148,22 +172,28 @@ async function blobToBase64(blob: Blob) {
 export default function App() {
   const [session, setSession] = useState<StaffSession | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [authMode, setAuthMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [displayName, setDisplayName] = useState("");
+  const [loginId, setLoginId] = useState("");
   const [password, setPassword] = useState("");
-  const [authNotice, setAuthNotice] = useState("");
   const [busy, setBusy] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
   const [members, setMembers] = useState<StaffAccount[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminBusyId, setAdminBusyId] = useState<string | null>(null);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberId, setNewMemberId] = useState("");
+  const [newMemberEmail, setNewMemberEmail] = useState("");
+  const [newMemberPassword, setNewMemberPassword] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState<"admin" | "staff">("staff");
   const [dashboardPage, setDashboardPage] = useState<DashboardPage>(dashboardPageFromHash);
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [candidates, setCandidates] = useState<Registration[]>([]);
   const [searching, setSearching] = useState(false);
   const [browseApplicants, setBrowseApplicants] = useState<Registration[]>([]);
-  const [selectedGroup, setSelectedGroup] = useState<number | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(groupNumberFromHash);
+  const [groupReturnPage, setGroupReturnPage] = useState<"overview" | "checkin">("overview");
+  const [applicantReturnPage, setApplicantReturnPage] = useState<"group" | "checkin">("checkin");
   const [groupCheckinSummary, setGroupCheckinSummary] = useState<GroupCheckinSummary | null>(null);
   const [applicantsLoading, setApplicantsLoading] = useState(false);
   const [applicantsLoadingMore, setApplicantsLoadingMore] = useState(false);
@@ -226,17 +256,37 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    const syncPage = () => setDashboardPage(dashboardPageFromHash());
+    const syncPage = () => {
+      const page = dashboardPageFromHash();
+      setDashboardPage(page);
+      if (page === "group") {
+        const groupNumber = groupNumberFromHash();
+        if (groupNumber !== null) {
+          selectedGroupRef.current = groupNumber;
+          setSelectedGroup(groupNumber);
+        }
+      }
+    };
     if (!window.location.hash) {
       window.history.replaceState(
         null,
         "",
-        `${window.location.pathname}${window.location.search}#checkin`,
+        `${window.location.pathname}${window.location.search}#overview`,
       );
     }
     window.addEventListener("hashchange", syncPage);
     return () => window.removeEventListener("hashchange", syncPage);
   }, []);
+
+  useEffect(() => {
+    if (dashboardPage !== "applicant" || selected) return;
+    setDashboardPage("checkin");
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${window.location.search}#checkin`,
+    );
+  }, [dashboardPage, selected]);
 
   useEffect(() => {
     if (!session || dashboardPage !== "checkin") {
@@ -279,8 +329,7 @@ export default function App() {
     if (
       !session ||
       adminOpen ||
-      dashboardPage !== "checkin" ||
-      query.trim() ||
+      dashboardPage !== "group" ||
       selectedGroup === null
     ) {
       setApplicantsLoading(false);
@@ -315,7 +364,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [session, adminOpen, dashboardPage, query, selectedGroup, checkinsRefresh]);
+  }, [session, adminOpen, dashboardPage, selectedGroup, checkinsRefresh]);
 
   useEffect(() => {
     if (!session || adminOpen || dashboardPage !== "checked-in") return;
@@ -347,6 +396,31 @@ export default function App() {
       window.clearTimeout(timer);
     };
   }, [session, adminOpen, dashboardPage, checkinSearch, checkinsRefresh]);
+
+  useEffect(() => {
+    if (!session || adminOpen || dashboardPage !== "overview") return;
+
+    let cancelled = false;
+    setDashboardLoading(true);
+    setDashboardSummary(null);
+    setError("");
+
+    void apiRequest<{ summary: DashboardSummary }>("/api/dashboard")
+      .then(({ summary }) => {
+        if (!cancelled) setDashboardSummary(summary);
+      })
+      .catch((summaryError) => {
+        if (cancelled) return;
+        setError(`โหลดภาพรวมไม่สำเร็จ: ${summaryError instanceof Error ? summaryError.message : "เกิดข้อผิดพลาด"}`);
+      })
+      .finally(() => {
+        if (!cancelled) setDashboardLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session, adminOpen, dashboardPage, checkinsRefresh]);
 
   useEffect(() => {
     if (!cameraOpen) {
@@ -399,34 +473,18 @@ export default function App() {
     event.preventDefault();
     setBusy(true);
     setError("");
-    setAuthNotice("");
     try {
-      if (authMode === "register") {
-        const { message } = await apiRequest<{ message: string }>("/api/auth/register", {
-          method: "POST",
-          body: jsonBody({
-            email: email.trim(),
-            display_name: displayName.trim(),
-            password,
-          }),
-        });
-        setPassword("");
-        setAuthMode("login");
-        setAuthNotice(message);
-        return;
-      }
-
       const { session: newSession } = await apiRequest<{ session: StaffSession }>(
         "/api/auth/login",
         {
           method: "POST",
-          body: jsonBody({ email: email.trim(), password }),
+          body: jsonBody({ login_id: loginId.trim(), password }),
         },
       );
       setSession(newSession);
       setPassword("");
     } catch (signInError) {
-      setError(`${authMode === "register" ? "สมัครสมาชิก" : "เข้าสู่ระบบ"}ไม่สำเร็จ: ${signInError instanceof Error ? signInError.message : "เกิดข้อผิดพลาด"}`);
+      setError(`เข้าสู่ระบบไม่สำเร็จ: ${signInError instanceof Error ? signInError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
       setBusy(false);
     }
@@ -441,9 +499,40 @@ export default function App() {
       );
       setMembers(nextMembers);
     } catch (memberError) {
-      setError(`โหลดรายชื่อสมาชิกไม่สำเร็จ: ${memberError instanceof Error ? memberError.message : "เกิดข้อผิดพลาด"}`);
+      setError(`โหลดรายชื่อบัญชีไม่สำเร็จ: ${memberError instanceof Error ? memberError.message : "เกิดข้อผิดพลาด"}`);
     } finally {
       setAdminLoading(false);
+    }
+  }
+
+  async function createMember(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAdminBusyId("create");
+    setError("");
+    setNotice("");
+    const role = session?.role === "superadmin" ? newMemberRole : "staff";
+    try {
+      await apiRequest<{ success: boolean }>("/api/admin/members", {
+        method: "POST",
+        body: jsonBody({
+          login_id: newMemberId.trim(),
+          email: newMemberEmail.trim(),
+          display_name: newMemberName.trim(),
+          password: newMemberPassword,
+          role,
+        }),
+      });
+      setNewMemberName("");
+      setNewMemberId("");
+      setNewMemberEmail("");
+      setNewMemberPassword("");
+      setNewMemberRole("staff");
+      setNotice(`เพิ่มบัญชี${role === "admin" ? "แอดมิน" : "เจ้าหน้าที่"}แล้ว`);
+      await loadMembers();
+    } catch (memberError) {
+      setError(`เพิ่มบัญชีไม่สำเร็จ: ${memberError instanceof Error ? memberError.message : "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setAdminBusyId(null);
     }
   }
 
@@ -472,7 +561,6 @@ export default function App() {
     if (
       applicantsLoadingMore ||
       !applicantsHasMore ||
-      query.trim() ||
       groupNumber === null
     ) return;
 
@@ -571,7 +659,7 @@ export default function App() {
   }
 
   async function deleteMember(member: StaffAccount) {
-    if (!window.confirm(`ยืนยันลบบัญชี ${member.email}?`)) return;
+    if (!window.confirm(`ยืนยันลบบัญชี ${member.login_id}?`)) return;
     setAdminBusyId(member.id);
     setError("");
     try {
@@ -587,12 +675,17 @@ export default function App() {
     }
   }
 
-  async function chooseRegistration(registration: Registration) {
+  async function chooseRegistration(
+    registration: Registration,
+    returnPage: "group" | "checkin",
+  ) {
+    setApplicantReturnPage(returnPage);
     setSelected(registration);
     setCheckin(null);
     setPhoto(null);
     setCameraOpen(false);
     setError("");
+    navigateDashboard("applicant");
     setCheckinLoading(true);
     try {
       const { checkin: existingCheckin } = await apiRequest<{
@@ -659,6 +752,7 @@ export default function App() {
       setQuery("");
       setCandidates([]);
       setCheckinsRefresh((current) => current + 1);
+      navigateDashboard(applicantReturnPage);
       window.setTimeout(() => setNotice(""), 2500);
     } catch (submitError) {
       const message = submitError instanceof Error ? submitError.message : "เกิดข้อผิดพลาด";
@@ -697,12 +791,32 @@ export default function App() {
     }
   }
 
-  function navigateDashboard(page: DashboardPage) {
+  function navigateDashboard(
+    page: DashboardPage,
+    groupNumber = selectedGroup ?? undefined,
+  ) {
     setDashboardPage(page);
     setAdminOpen(false);
     setError("");
+    if (page === "checkin") {
+      setSelected(null);
+      setCheckin(null);
+      setPhoto(null);
+    }
     if (cameraOpen) setCameraOpen(false);
-    if (window.location.hash !== `#${page}`) window.location.hash = page;
+    const hash = page === "group" ? `#group-${groupNumber}` : `#${page}`;
+    if (window.location.hash !== hash) window.location.hash = hash;
+  }
+
+  function openGroup(groupNumber: number, returnPage: "overview" | "checkin") {
+    setGroupReturnPage(returnPage);
+    setSelected(null);
+    setCheckin(null);
+    setPhoto(null);
+    setQuery("");
+    setCandidates([]);
+    chooseGroup(groupNumber);
+    navigateDashboard("group", groupNumber);
   }
 
   if (authLoading) {
@@ -716,54 +830,22 @@ export default function App() {
           <div className="brand-mark"><Icon name="school" /></div>
           <p className="eyebrow">งานรับสมัครนักเรียน อ.1</p>
           <h1 className="system-title">{SYSTEM_NAME}</h1>
-          <p className="muted">
-            {authMode === "login" ? "เข้าสู่ระบบสำหรับเจ้าหน้าที่" : "สมัครบัญชีเจ้าหน้าที่ใหม่"}
-          </p>
-          {authNotice && <div className="success-toast" role="status"><Icon name="check" className="toast-icon" />{authNotice}</div>}
+          <p className="muted">เข้าสู่ระบบสำหรับเจ้าหน้าที่</p>
           <form onSubmit={submitAuth} className="login-form">
-            {authMode === "register" && (
-              <>
-                <label htmlFor="display-name">ชื่อที่แสดง</label>
-                <input
-                  id="display-name"
-                  autoComplete="name"
-                  maxLength={100}
-                  value={displayName}
-                  onChange={(event) => setDisplayName(event.target.value)}
-                  required
-                />
-              </>
-            )}
-            <label htmlFor="email">อีเมลเจ้าหน้าที่</label>
-            <input id="email" type="email" autoComplete="username" value={email} onChange={(event) => setEmail(event.target.value)} required />
+            <label htmlFor="login-id">ID เจ้าหน้าที่</label>
+            <input id="login-id" type="text" autoComplete="username" maxLength={254} value={loginId} onChange={(event) => setLoginId(event.target.value)} required />
             <label htmlFor="password">รหัสผ่าน</label>
             <input
               id="password"
               type="password"
-              autoComplete={authMode === "login" ? "current-password" : "new-password"}
-              minLength={authMode === "register" ? 10 : undefined}
-              maxLength={128}
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
             />
             {error && <p className="error-message" role="alert"><Icon name="alert" className="toast-icon" />{error}</p>}
             <button className="button button-primary full-width" type="submit" disabled={busy}>
-              {busy
-                ? (authMode === "login" ? "กำลังเข้าสู่ระบบ…" : "กำลังสมัครสมาชิก…")
-                : (authMode === "login" ? "เข้าสู่ระบบ" : "สมัครสมาชิก")}
-            </button>
-            <button
-              className="button button-quiet full-width"
-              type="button"
-              onClick={() => {
-                setAuthMode(authMode === "login" ? "register" : "login");
-                setPassword("");
-                setError("");
-                setAuthNotice("");
-              }}
-            >
-              {authMode === "login" ? "ยังไม่มีบัญชี? สมัครสมาชิก" : "มีบัญชีแล้ว? เข้าสู่ระบบ"}
+              {busy ? "กำลังเข้าสู่ระบบ…" : "เข้าสู่ระบบ"}
             </button>
           </form>
         </section>
@@ -771,15 +853,26 @@ export default function App() {
     );
   }
 
+  const isSuperadmin = session.role === "superadmin";
   const onTime = selected
     ? isWithinSlot(selected.slot_start, selected.slot_end, currentBangkokMinutes(new Date(clock)))
     : false;
   const checkedInPercentage = groupCheckinSummary && groupCheckinSummary.total > 0
     ? (groupCheckinSummary.checked_in / groupCheckinSummary.total) * 100
     : 0;
+  const overallCheckinPercentage = dashboardSummary && dashboardSummary.total > 0
+    ? (dashboardSummary.checked_in / dashboardSummary.total) * 100
+    : 0;
   const selectedGroupSchedule = selectedGroup === null
     ? null
     : getGroupSchedule(selectedGroup);
+  const parentDashboardPage = dashboardPage === "group"
+    ? groupReturnPage
+    : dashboardPage === "applicant"
+      ? applicantReturnPage === "group"
+        ? groupReturnPage
+        : "checkin"
+      : dashboardPage;
   return (
     <main className="screen">
       <div className="app-shell">
@@ -793,7 +886,7 @@ export default function App() {
           </div>
           <div className="staff-menu">
             <span className="staff-email">{session.display_name || session.email}</span>
-            {session.role === "admin" && (
+            {session.role === "admin" || isSuperadmin ? (
               <button
                 className="button button-quiet"
                 onClick={() => {
@@ -803,9 +896,9 @@ export default function App() {
                   if (opening) void loadMembers();
                 }}
               >
-                {adminOpen ? "ปิดจัดการสมาชิก" : "จัดการสมาชิก"}
+                {adminOpen ? "ปิดจัดการระบบ" : "จัดการระบบ"}
               </button>
-            )}
+            ) : null}
             <button className="button button-quiet" onClick={() => void signOut()}>ออกจากระบบ</button>
           </div>
         </header>
@@ -813,12 +906,20 @@ export default function App() {
         {!adminOpen && (
           <nav className="dashboard-nav" aria-label="หน้าระบบเช็กชื่อ">
             <button
-              className={`dashboard-tab ${dashboardPage === "checkin" ? "dashboard-tab-active" : ""}`}
+              className={`dashboard-tab ${parentDashboardPage === "overview" ? "dashboard-tab-active" : ""}`}
               type="button"
-              aria-current={dashboardPage === "checkin" ? "page" : undefined}
+              aria-current={parentDashboardPage === "overview" ? "page" : undefined}
+              onClick={() => navigateDashboard("overview")}
+            >
+              ภาพรวม
+            </button>
+            <button
+              className={`dashboard-tab ${parentDashboardPage === "checkin" ? "dashboard-tab-active" : ""}`}
+              type="button"
+              aria-current={parentDashboardPage === "checkin" ? "page" : undefined}
               onClick={() => navigateDashboard("checkin")}
             >
-              ค้นหาและเช็กชื่อ
+              ค้นหา
             </button>
             <button
               className={`dashboard-tab ${dashboardPage === "checked-in" ? "dashboard-tab-active" : ""}`}
@@ -838,19 +939,85 @@ export default function App() {
           <section className="card members-card">
             <div className="members-heading">
               <div>
-                <h2>จัดการสมาชิก</h2>
-                <p className="muted">บัญชีใหม่เปิดใช้งานได้ทันที สิทธิ์เริ่มต้นเป็นเจ้าหน้าที่</p>
+                <h2>จัดการระบบ</h2>
+                <p className="muted">
+                  {isSuperadmin
+                    ? "แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่"
+                    : "แอดมินสร้างและจัดการบัญชีเจ้าหน้าที่ และดูบัญชีแอดมินได้"}
+                </p>
               </div>
-              <button className="button button-quiet" onClick={() => void loadMembers()} disabled={adminLoading}>
+              <button
+                className="button button-quiet"
+                onClick={() => void loadMembers()}
+                disabled={adminLoading || adminBusyId !== null}
+              >
                 {adminLoading ? "กำลังโหลด…" : "รีเฟรช"}
               </button>
             </div>
+            <form className="member-create-form" onSubmit={createMember}>
+              <div className="member-create-fields">
+                <label>
+                  ชื่อที่แสดง
+                  <input
+                    autoComplete="name"
+                    maxLength={100}
+                    value={newMemberName}
+                    onChange={(event) => setNewMemberName(event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  ID สำหรับเข้าสู่ระบบ
+                  <input
+                    autoComplete="username"
+                    maxLength={254}
+                    value={newMemberId}
+                    onChange={(event) => setNewMemberId(event.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  อีเมล (ไม่บังคับ)
+                  <input
+                    type="email"
+                    maxLength={254}
+                    value={newMemberEmail}
+                    onChange={(event) => setNewMemberEmail(event.target.value)}
+                  />
+                </label>
+                <label>
+                  รหัสผ่าน
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    value={newMemberPassword}
+                    onChange={(event) => setNewMemberPassword(event.target.value)}
+                    required
+                  />
+                </label>
+                {isSuperadmin && (
+                  <label>
+                    ระดับสิทธิ์
+                    <select
+                      value={newMemberRole}
+                      onChange={(event) => setNewMemberRole(event.target.value === "admin" ? "admin" : "staff")}
+                    >
+                      <option value="staff">เจ้าหน้าที่</option>
+                      <option value="admin">แอดมิน</option>
+                    </select>
+                  </label>
+                )}
+              </div>
+              <button className="button button-primary" type="submit" disabled={adminBusyId !== null}>
+                {adminBusyId === "create" ? "กำลังเพิ่มบัญชี…" : "เพิ่มบัญชี"}
+              </button>
+            </form>
             {adminLoading ? (
-              <div className="status status-pending" role="status" aria-live="polite">กำลังโหลดรายชื่อสมาชิก…</div>
+              <div className="status status-pending" role="status" aria-live="polite">กำลังโหลดรายชื่อบัญชี…</div>
             ) : members.length === 0 && !error ? (
               <div className="not-found">
                 <Icon name="school" className="empty-icon" />
-                <strong>ยังไม่มีบัญชีเจ้าหน้าที่</strong>
+                <strong>ยังไม่มีบัญชีให้จัดการ</strong>
               </div>
             ) : members.length > 0 ? (
               <div className="member-list">
@@ -858,9 +1025,10 @@ export default function App() {
                   <article className="member-row" key={member.id}>
                     <div className="member-details">
                       <strong>{member.display_name}</strong>
-                      <span>{member.email}</span>
+                      <span>ID: {member.login_id}</span>
+                      {member.email && <span>อีเมล: {member.email}</span>}
                       <span className="muted">
-                        {member.role === "admin" ? "แอดมิน" : "เจ้าหน้าที่"} · {
+                        {member.role === "superadmin" ? "แอดมินใหญ่" : member.role === "admin" ? "แอดมิน" : "เจ้าหน้าที่"} · {
                           {
                             pending: "รออนุมัติ",
                             active: "ใช้งานได้",
@@ -871,6 +1039,8 @@ export default function App() {
                       </span>
                     </div>
                     <div className="member-actions">
+                      {member.role === "admin" && !isSuperadmin ? null : (
+                        <>
                       {member.status === "pending" ? (
                         <>
                           <button
@@ -905,16 +1075,18 @@ export default function App() {
                           เปิดใช้บัญชี
                         </button>
                       )}
-                      <button
-                        className="button button-quiet"
-                        onClick={() => void updateMember(member, {
-                          role: member.role === "admin" ? "staff" : "admin",
-                          status: member.status,
-                        })}
-                        disabled={adminBusyId !== null || member.id === session.id}
-                      >
-                        {member.role === "admin" ? "ลดเป็นเจ้าหน้าที่" : "ตั้งเป็นแอดมิน"}
-                      </button>
+                      {isSuperadmin && member.role !== "superadmin" && (
+                        <button
+                          className="button button-quiet"
+                          onClick={() => void updateMember(member, {
+                            role: member.role === "admin" ? "staff" : "admin",
+                            status: member.status,
+                          })}
+                          disabled={adminBusyId !== null || member.id === session.id}
+                        >
+                          {member.role === "admin" ? "ลดเป็นเจ้าหน้าที่" : "ตั้งเป็นแอดมิน"}
+                        </button>
+                      )}
                       <button
                         className="button button-danger"
                         onClick={() => void deleteMember(member)}
@@ -922,6 +1094,8 @@ export default function App() {
                       >
                         ลบบัญชี
                       </button>
+                        </>
+                      )}
                     </div>
                   </article>
                 ))}
@@ -930,173 +1104,304 @@ export default function App() {
           </section>
         ) : (
           <>
-        {dashboardPage === "checkin" && (
-          <>
-        {!selected && (
-        <section className="card search-card">
-          <div className="section-heading">
-            <div>
-              <h2>ค้นหาผู้สมัคร</h2>
-              <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
-            </div>
-          </div>
-          <div className="search-control">
-            <span className="search-icon"><Icon name="search" /></span>
-            <input
-              aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
-              autoComplete="off"
-              placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setSelected(null);
-                setCheckin(null);
-                setPhoto(null);
-                setCameraOpen(false);
-                setError("");
-              }}
-            />
-            {searching && <span className="searching-label" role="status" aria-live="polite">กำลังค้นหา…</span>}
-          </div>
-          {!selected && candidates.length > 0 && (
-            <div className="candidate-list" aria-label="ผลการค้นหา">
-              {candidates.map((candidate) => (
-                <button className="candidate-row" key={candidate.id} onClick={() => void chooseRegistration(candidate)}>
-                  <span className="candidate-code">{candidate.application_code}</span>
-                  <span className="candidate-name">{candidate.title}{candidate.first_name} {candidate.last_name}</span>
-                  <span className="candidate-group">กลุ่ม {candidate.group_number}</span>
-                  <span className="candidate-arrow"><Icon name="chevron-right" /></span>
-                </button>
-              ))}
-            </div>
-          )}
-          {!selected && !searching && query.trim().length > 0 && candidates.length === 0 && !error && (
-            <div className="not-found">
-              <Icon name="search" className="empty-icon" />
-              <strong>ไม่พบข้อมูลผู้สมัคร ลองตรวจสอบคำค้นอีกครั้ง</strong>
-            </div>
-          )}
-        </section>
-        )}
-
-        {!selected && !query.trim() && (
-          <section className="card applicants-card" aria-label="รายชื่อผู้สมัคร">
-            <header className="applicants-heading">
+        {dashboardPage === "overview" && (
+          <section className="card overview-card">
+            <header className="overview-heading">
               <div>
-                <h2>เลือกกลุ่มผู้สมัคร</h2>
-                <p className="muted">เลือกกลุ่มเพื่อดูรายชื่อและดำเนินการเช็กอิน</p>
+                <h2>ภาพรวมการเช็กอิน</h2>
+                <p className="muted">สรุปผู้สมัครทั้งหมดและความคืบหน้าของแต่ละรอบ</p>
               </div>
+              <button
+                className="button button-quiet"
+                type="button"
+                onClick={() => setCheckinsRefresh((current) => current + 1)}
+                disabled={dashboardLoading}
+              >
+                {dashboardLoading ? "กำลังโหลด…" : "รีเฟรช"}
+              </button>
             </header>
 
-            <div className="group-button-grid" aria-label="เลือกกลุ่ม 1 ถึง 30">
-              {GROUP_NUMBERS.map((groupNumber) => (
-                <button
-                  className={`group-button group-button-color-${(groupNumber - 1) % 6 + 1}`}
-                  key={groupNumber}
-                  type="button"
-                  aria-pressed={selectedGroup === groupNumber}
-                  onClick={() => chooseGroup(selectedGroup === groupNumber ? null : groupNumber)}
-                >
-                  กลุ่ม {groupNumber}
-                </button>
-              ))}
-            </div>
+            {dashboardLoading ? (
+              <div className="status status-pending" role="status" aria-live="polite">
+                กำลังโหลดข้อมูลภาพรวม…
+              </div>
+            ) : dashboardSummary ? (
+              <>
+                <div className="overview-stats">
+                  <article className="overview-stat">
+                    <span>ผู้สมัครทั้งหมด</span>
+                    <strong>{dashboardSummary.total}</strong>
+                    <small>คน</small>
+                  </article>
+                  <article className="overview-stat overview-stat-checked">
+                    <span>เช็กอินแล้ว</span>
+                    <strong>{dashboardSummary.checked_in}</strong>
+                    <small>คน</small>
+                  </article>
+                  <article className="overview-stat overview-stat-pending">
+                    <span>ยังไม่มา</span>
+                    <strong>{dashboardSummary.total - dashboardSummary.checked_in}</strong>
+                    <small>คน</small>
+                  </article>
+                  <article className="overview-stat">
+                    <span>เช็กอินแล้ว</span>
+                    <strong>{Math.round(overallCheckinPercentage)}%</strong>
+                    <small>ของผู้สมัครทั้งหมด</small>
+                  </article>
+                </div>
 
-            {selectedGroup !== null && (
-              <section className="applicant-group selected-applicant-group">
-                <header className="applicant-group-heading">
-                  <h3>รายชื่อกลุ่ม {selectedGroup}</h3>
-                  {!applicantsLoading && browseApplicants.length > 0 && (
-                    <span className="group-applicant-count">
-                      {browseApplicants.length}{applicantsHasMore ? "+" : ""} รายชื่อ
-                    </span>
-                  )}
-                </header>
-                {selectedGroupSchedule && (
-                  <div className="group-schedule">
-                    <div className="group-schedule-item">
-                      <span>เวลาลงทะเบียน</span>
-                      <strong>{selectedGroupSchedule.registrationTime}</strong>
-                    </div>
-                    <div className="group-schedule-item">
-                      <span>เวลาทำกิจกรรม</span>
-                      <strong>{selectedGroupSchedule.activityTime}</strong>
+                <div className="group-attendance overview-attendance">
+                  <div
+                    className="attendance-pie"
+                    role="img"
+                    aria-label={`เช็กอินแล้ว ${dashboardSummary.checked_in} จาก ${dashboardSummary.total} คน`}
+                    style={{
+                      background: `conic-gradient(#38b34a 0% ${overallCheckinPercentage}%, #e8e3dc ${overallCheckinPercentage}% 100%)`,
+                    }}
+                  >
+                    <div className="attendance-pie-center">
+                      <strong>{dashboardSummary.checked_in}</strong>
+                      <span>จาก {dashboardSummary.total} คน</span>
                     </div>
                   </div>
-                )}
-                {applicantsLoading ? (
-                  <div className="status status-pending group-loading" role="status" aria-live="polite">
-                    กำลังโหลดรายชื่อกลุ่ม {selectedGroup}…
+                  <div className="attendance-legend">
+                    <h4>สรุปเช็กอินทั้งหมด</h4>
+                    <div className="attendance-legend-item">
+                      <span className="attendance-swatch attendance-swatch-checked" />
+                      <span>เช็กอินแล้ว</span>
+                      <strong>{dashboardSummary.checked_in} คน</strong>
+                    </div>
+                    <div className="attendance-legend-item">
+                      <span className="attendance-swatch attendance-swatch-pending" />
+                      <span>ยังไม่มา</span>
+                      <strong>{dashboardSummary.total - dashboardSummary.checked_in} คน</strong>
+                    </div>
                   </div>
-                ) : (
-                  <>
-                {groupCheckinSummary && (
-                  <div className="group-attendance">
-                    <div
-                      className="attendance-pie"
-                      role="img"
-                      aria-label={`เช็กอินแล้ว ${groupCheckinSummary.checked_in} จาก ${groupCheckinSummary.total} คน`}
-                      style={{
-                        background: `conic-gradient(#38b34a 0% ${checkedInPercentage}%, #e8e3dc ${checkedInPercentage}% 100%)`,
-                      }}
+                </div>
+
+                <div className="overview-rounds">
+                  {Array.from({ length: ROUND_COUNT }, (_, roundIndex) => {
+                    const firstGroup = roundIndex * GROUPS_PER_ROUND + 1;
+                    const roundGroups = dashboardSummary.groups.filter(
+                      ({ group_number }) =>
+                        group_number >= firstGroup &&
+                        group_number < firstGroup + GROUPS_PER_ROUND,
+                    );
+                    const schedule = getGroupSchedule(firstGroup);
+
+                    return (
+                      <section className="overview-round" key={firstGroup}>
+                        <header className="overview-round-heading">
+                          <h3>รอบ {roundIndex + 1}</h3>
+                          <p>
+                            ลงทะเบียน {schedule.registrationTime}
+                            <span> · </span>
+                            ทำกิจกรรม {schedule.activityTime}
+                          </p>
+                        </header>
+                        <div className="overview-group-grid">
+                          {roundGroups.map((group) => {
+                            const percentage = group.total > 0
+                              ? (group.checked_in / group.total) * 100
+                              : 0;
+                            return (
+                              <button
+                                className={`overview-group-tile group-button-color-${(group.group_number - 1) % GROUPS_PER_ROUND + 1}`}
+                                key={group.group_number}
+                                type="button"
+                                aria-label={`กลุ่ม ${group.group_number}: เช็กอินแล้ว ${group.checked_in} จาก ${group.total} คน`}
+                                onClick={() => {
+                                  openGroup(group.group_number, "overview");
+                                }}
+                              >
+                                <span>กลุ่ม {group.group_number}</span>
+                                <strong>{group.checked_in} / {group.total} คน</strong>
+                                <span className="overview-group-progress">
+                                  <span style={{ width: `${percentage}%` }} />
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
+              </>
+            ) : null}
+          </section>
+        )}
+        {dashboardPage === "checkin" && (
+          <>
+            <section className="card search-card">
+              <div className="section-heading">
+                <div>
+                  <h2>ค้นหาผู้สมัคร</h2>
+                  <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
+                </div>
+              </div>
+              <div className="search-control">
+                <span className="search-icon"><Icon name="search" /></span>
+                <input
+                  aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
+                  autoComplete="off"
+                  placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
+                  value={query}
+                  onChange={(event) => {
+                    setQuery(event.target.value);
+                    setError("");
+                  }}
+                />
+                {searching && <span className="searching-label" role="status" aria-live="polite">กำลังค้นหา…</span>}
+              </div>
+              {candidates.length > 0 && (
+                <div className="candidate-list" aria-label="ผลการค้นหา">
+                  {candidates.map((candidate) => (
+                    <button
+                      className="candidate-row"
+                      key={candidate.id}
+                      onClick={() => void chooseRegistration(candidate, "checkin")}
                     >
-                      <div className="attendance-pie-center">
-                        <strong>{groupCheckinSummary.checked_in}</strong>
-                        <span>จาก {groupCheckinSummary.total} คน</span>
-                      </div>
-                    </div>
-                    <div className="attendance-legend">
-                      <h4>สรุปการเช็กอิน</h4>
-                      <div className="attendance-legend-item">
-                        <span className="attendance-swatch attendance-swatch-checked" />
-                        <span>เช็กอินแล้ว</span>
-                        <strong>{groupCheckinSummary.checked_in} คน</strong>
-                      </div>
-                      <div className="attendance-legend-item">
-                        <span className="attendance-swatch attendance-swatch-pending" />
-                        <span>ยังไม่มา</span>
-                        <strong>{groupCheckinSummary.total - groupCheckinSummary.checked_in} คน</strong>
-                      </div>
-                    </div>
+                      <span className="candidate-code">{candidate.application_code}</span>
+                      <span className="candidate-name">{candidate.title}{candidate.first_name} {candidate.last_name}</span>
+                      <span className="candidate-group">กลุ่ม {candidate.group_number}</span>
+                      <span className="candidate-arrow"><Icon name="chevron-right" /></span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {!searching && query.trim().length > 0 && candidates.length === 0 && !error && (
+                <div className="not-found">
+                  <Icon name="search" className="empty-icon" />
+                  <strong>ไม่พบข้อมูลผู้สมัคร ลองตรวจสอบคำค้นอีกครั้ง</strong>
+                </div>
+              )}
+            </section>
+
+            {!query.trim() && (
+              <section className="card applicants-card" aria-label="เลือกกลุ่มผู้สมัคร">
+                <header className="applicants-heading">
+                  <div>
+                    <h2>เลือกกลุ่มผู้สมัคร</h2>
+                    <p className="muted">เลือกกลุ่มเพื่อดูรายชื่อและดำเนินการเช็กอิน</p>
                   </div>
-                )}
-                {browseApplicants.length > 0 ? (
-                  <div className="applicant-list">
-                    {browseApplicants.map((applicant) => (
-                      <button
-                        className={`applicant-row ${applicant.checked_in ? "applicant-row-checked-in" : ""}`}
-                        key={applicant.id}
-                        type="button"
-                        onClick={() => void chooseRegistration(applicant)}
-                      >
-                        <span className="candidate-code">{applicant.application_code}</span>
-                        <span className="applicant-name">
-                          {applicant.title}{applicant.first_name} {applicant.last_name}
-                        </span>
-                        {applicant.checked_in && (
-                          <span
-                            className="applicant-checkin-status applicant-checkin-done"
-                          >
-                            เช็กอินแล้ว
-                          </span>
-                        )}
-                        <span className="applicant-slot">รอบ {applicant.slot_text}</span>
-                        <span className="candidate-arrow"><Icon name="chevron-right" /></span>
-                      </button>
-                    ))}
-                  </div>
-                ) : !error ? (
-                  <div className="not-found group-empty">
-                    <Icon name="search" className="empty-icon" />
-                    <strong>ไม่พบรายชื่อในกลุ่มนี้</strong>
-                  </div>
-                ) : null}
-                  </>
-                )}
+                </header>
+                <div className="group-button-grid" aria-label="เลือกกลุ่ม 1 ถึง 30">
+                  {GROUP_NUMBERS.map((groupNumber) => (
+                    <button
+                      className={`group-button group-button-color-${(groupNumber - 1) % 6 + 1}`}
+                      key={groupNumber}
+                      type="button"
+                      onClick={() => openGroup(groupNumber, "checkin")}
+                    >
+                      กลุ่ม {groupNumber}
+                    </button>
+                  ))}
+                </div>
               </section>
             )}
-
-            {selectedGroup !== null && applicantsHasMore && !applicantsLoading && (
+          </>
+        )}
+        {dashboardPage === "group" && selectedGroup !== null && (
+          <section className="card applicants-card group-page-card" aria-label={`รายชื่อผู้สมัครกลุ่ม ${selectedGroup}`}>
+            <button
+              className="back-button group-back-button"
+              type="button"
+              onClick={() => navigateDashboard("checkin")}
+            >
+              <Icon name="arrow-left" />
+              <span>กลับไปหน้าค้นหา</span>
+            </button>
+            <section className="applicant-group selected-applicant-group">
+              <header className="applicant-group-heading">
+                <h3>รายชื่อกลุ่ม {selectedGroup}</h3>
+                {!applicantsLoading && browseApplicants.length > 0 && (
+                  <span className="group-applicant-count">
+                    {browseApplicants.length}{applicantsHasMore ? "+" : ""} รายชื่อ
+                  </span>
+                )}
+              </header>
+              {selectedGroupSchedule && (
+                <div className="group-schedule">
+                  <div className="group-schedule-item">
+                    <span>เวลาลงทะเบียน</span>
+                    <strong>{selectedGroupSchedule.registrationTime}</strong>
+                  </div>
+                  <div className="group-schedule-item">
+                    <span>เวลาทำกิจกรรม</span>
+                    <strong>{selectedGroupSchedule.activityTime}</strong>
+                  </div>
+                </div>
+              )}
+              {applicantsLoading ? (
+                <div className="status status-pending group-loading" role="status" aria-live="polite">
+                  กำลังโหลดรายชื่อกลุ่ม {selectedGroup}…
+                </div>
+              ) : (
+                <>
+                  {groupCheckinSummary && (
+                    <div className="group-attendance">
+                      <div
+                        className="attendance-pie"
+                        role="img"
+                        aria-label={`เช็กอินแล้ว ${groupCheckinSummary.checked_in} จาก ${groupCheckinSummary.total} คน`}
+                        style={{
+                          background: `conic-gradient(#38b34a 0% ${checkedInPercentage}%, #e8e3dc ${checkedInPercentage}% 100%)`,
+                        }}
+                      >
+                        <div className="attendance-pie-center">
+                          <strong>{groupCheckinSummary.checked_in}</strong>
+                          <span>จาก {groupCheckinSummary.total} คน</span>
+                        </div>
+                      </div>
+                      <div className="attendance-legend">
+                        <h4>สรุปการเช็กอิน</h4>
+                        <div className="attendance-legend-item">
+                          <span className="attendance-swatch attendance-swatch-checked" />
+                          <span>เช็กอินแล้ว</span>
+                          <strong>{groupCheckinSummary.checked_in} คน</strong>
+                        </div>
+                        <div className="attendance-legend-item">
+                          <span className="attendance-swatch attendance-swatch-pending" />
+                          <span>ยังไม่มา</span>
+                          <strong>{groupCheckinSummary.total - groupCheckinSummary.checked_in} คน</strong>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {browseApplicants.length > 0 ? (
+                    <div className="applicant-list">
+                      {browseApplicants.map((applicant) => (
+                        <button
+                          className={`applicant-row ${applicant.checked_in ? "applicant-row-checked-in" : ""}`}
+                          key={applicant.id}
+                          type="button"
+                          onClick={() => void chooseRegistration(applicant, "group")}
+                        >
+                          <span className="candidate-code">{applicant.application_code}</span>
+                          <span className="applicant-name">
+                            {applicant.title}{applicant.first_name} {applicant.last_name}
+                          </span>
+                          {applicant.checked_in && (
+                            <span className="applicant-checkin-status applicant-checkin-done">
+                              เช็กอินแล้ว
+                            </span>
+                          )}
+                          <span className="applicant-slot">รอบ {applicant.slot_text}</span>
+                          <span className="candidate-arrow"><Icon name="chevron-right" /></span>
+                        </button>
+                      ))}
+                    </div>
+                  ) : !error ? (
+                    <div className="not-found group-empty">
+                      <Icon name="search" className="empty-icon" />
+                      <strong>ไม่พบรายชื่อในกลุ่มนี้</strong>
+                    </div>
+                  ) : null}
+                </>
+              )}
+            </section>
+            {applicantsHasMore && !applicantsLoading && (
               <button
                 className="button button-quiet load-more-button"
                 type="button"
@@ -1107,9 +1412,6 @@ export default function App() {
               </button>
             )}
           </section>
-        )}
-
-          </>
         )}
         {dashboardPage === "checked-in" && (
         <section className="card checked-in-card">
@@ -1187,9 +1489,8 @@ export default function App() {
         </section>
         )}
 
-        {dashboardPage === "checkin" && (
+        {dashboardPage === "applicant" && selected && (
           <>
-        {selected && (
           <section className="card registration-card">
             <div className="section-heading">
               <div>
@@ -1266,12 +1567,20 @@ export default function App() {
               </>
             )}
 
-            <button className="back-button" onClick={() => { setSelected(null); setCheckin(null); setPhoto(null); setCameraOpen(false); }}>
+            <button
+              className="back-button"
+              onClick={() => {
+                setSelected(null);
+                setCheckin(null);
+                setPhoto(null);
+                setCameraOpen(false);
+                navigateDashboard(applicantReturnPage);
+              }}
+            >
               <Icon name="arrow-left" />
-              <span>{query.trim() ? "กลับไปผลการค้นหา" : "กลับไปหน้ารายชื่อผู้สมัคร"}</span>
+              <span>{applicantReturnPage === "group" ? "กลับไปหน้ารายชื่อกลุ่ม" : "กลับไปหน้าค้นหา"}</span>
             </button>
           </section>
-        )}
           </>
         )}
           </>

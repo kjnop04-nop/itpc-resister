@@ -18,7 +18,7 @@ function loginFailureMessage(error) {
     code === "42703" ||
     code === "42883"
   ) {
-    return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ทั้ง 7 ไฟล์ตามลำดับใน README.md";
+    return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ทั้ง 9 ไฟล์ตามลำดับใน README.md";
   }
   if (
     message.includes("SUPABASE_URL") ||
@@ -45,22 +45,26 @@ export default async function handler(request, response) {
   }
 
   try {
-    const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+    const loginId = typeof body?.login_id === "string"
+      ? body.login_id.trim().toLowerCase()
+      : typeof body?.email === "string"
+        ? body.email.trim().toLowerCase()
+        : "";
     const password = typeof body?.password === "string" ? body.password : "";
-    if (!email || !password || password.length > 1024) {
-      sendJson(response, 400, { error: "กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน" });
+    if (!loginId || loginId.length > 254 || /\s/.test(loginId) || !password) {
+      sendJson(response, 400, { error: "กรุณากรอก ID และรหัสผ่านให้ครบถ้วน" });
       return;
     }
 
     const client = getAdminClient();
     const { data, error } = await client.rpc("verify_staff_login", {
-      p_email: email,
+      p_login_id: loginId,
       p_password: password,
     });
     if (error) throw error;
     const staff = data?.[0];
     if (!staff) {
-      sendJson(response, 401, { error: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" });
+      sendJson(response, 401, { error: "ID หรือรหัสผ่านไม่ถูกต้อง" });
       return;
     }
     if (staff.status !== "active") {

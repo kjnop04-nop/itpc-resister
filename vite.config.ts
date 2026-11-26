@@ -9,6 +9,7 @@ import login from "./api/auth/login.mjs";
 import logout from "./api/auth/logout.mjs";
 import session from "./api/auth/session.mjs";
 import registrations from "./api/registrations.mjs";
+import dashboard from "./api/dashboard.mjs";
 
 const apiRoutes = new Map([
   ["/api/auth/login", login],
@@ -17,6 +18,7 @@ const apiRoutes = new Map([
   ["/api/auth/session", session],
   ["/api/admin/members", members],
   ["/api/registrations", registrations],
+  ["/api/dashboard", dashboard],
   ["/api/checkins", checkins],
 ]);
 

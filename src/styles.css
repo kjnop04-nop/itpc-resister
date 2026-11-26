@@ -228,6 +228,164 @@ button {
   font-size: 15px;
 }
 
+.overview-card {
+  margin-bottom: 18px;
+  padding: 26px 30px;
+  border-radius: 17px;
+}
+
+.overview-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.overview-heading h2 {
+  margin: 0;
+  color: var(--accent);
+  font-size: 20px;
+}
+
+.overview-heading p {
+  margin: 4px 0 0;
+}
+
+.overview-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.overview-stat {
+  display: grid;
+  min-height: 100px;
+  align-content: center;
+  gap: 2px;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fbf8f2;
+}
+
+.overview-stat span,
+.overview-stat small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.overview-stat strong {
+  color: #39343c;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.overview-stat-checked {
+  border-color: #d7ead9;
+  background: #f0f8f1;
+}
+
+.overview-stat-checked strong {
+  color: #276b34;
+}
+
+.overview-stat-pending {
+  border-color: #ece5dc;
+  background: #faf6f0;
+}
+
+.overview-attendance {
+  margin: 14px 0 20px;
+}
+
+.overview-rounds {
+  display: grid;
+  gap: 14px;
+}
+
+.overview-round {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+}
+
+.overview-round-heading {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--line);
+  background: var(--accent-soft);
+}
+
+.overview-round-heading h3,
+.overview-round-heading p {
+  margin: 0;
+}
+
+.overview-round-heading h3 {
+  color: #39343c;
+  font-size: 16px;
+}
+
+.overview-round-heading p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.overview-group-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
+  padding: 8px;
+}
+
+.overview-group-tile {
+  display: grid;
+  min-width: 0;
+  min-height: 92px;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 9px 5px;
+  border: 0;
+  color: #fff;
+  text-align: center;
+  transition: filter 0.18s, transform 0.18s;
+}
+
+.overview-group-tile:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+
+.overview-group-tile:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 3px solid #392e40;
+  outline-offset: -3px;
+}
+
+.overview-group-tile strong {
+  font-size: 14px;
+}
+
+.overview-group-progress {
+  width: min(100%, 90px);
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 45%);
+}
+
+.overview-group-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0.8;
+}
+
 .applicants-card {
   margin-bottom: 18px;
   padding: 26px 30px;
@@ -1196,6 +1354,50 @@ button {
   font-size: 15px;
 }
 
+.member-create-form {
+  display: grid;
+  justify-items: start;
+  gap: 14px;
+  margin-bottom: 22px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbf8f3;
+}
+
+.member-create-fields {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+  gap: 12px;
+}
+
+.member-create-fields label {
+  display: grid;
+  gap: 6px;
+  color: #39343c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.member-create-fields input,
+.member-create-fields select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #2f2a32;
+  font: inherit;
+}
+
+.member-create-fields input:focus,
+.member-create-fields select:focus {
+  border-color: var(--accent);
+  outline: 3px solid #f2ecf6;
+}
+
 .member-list {
   display: grid;
   gap: 10px;
@@ -1367,9 +1569,38 @@ button {
   }
 
   .search-card,
-  .checked-in-card {
+  .checked-in-card,
+  .overview-card {
     padding: 20px 16px;
     border-radius: 14px;
+  }
+
+  .overview-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .overview-stat {
+    min-height: 86px;
+    padding: 10px;
+  }
+
+  .overview-stat strong {
+    font-size: 23px;
+  }
+
+  .overview-group-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px;
+  }
+
+  .overview-group-tile {
+    min-height: 82px;
+    font-size: 13px;
+  }
+
+  .overview-group-tile strong {
+    font-size: 13px;
   }
 
   .applicants-card {

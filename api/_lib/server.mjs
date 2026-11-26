@@ -196,16 +196,6 @@ export async function withAuthenticatedStaff(request, response, action) {
   }
 }
 
-export async function withAdministrator(request, response, action) {
-  await withAuthenticatedStaff(request, response, async (staff) => {
-    if (staff.role !== "admin") {
-      sendJson(response, 403, { error: "ไม่มีสิทธิ์จัดการสมาชิก" });
-      return;
-    }
-    await action(staff);
-  });
-}
-
 export function validUuid(value) {
   return typeof value === "string" && UUID_PATTERN.test(value);
 }
