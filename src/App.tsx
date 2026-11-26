@@ -915,9 +915,9 @@ export default function App() {
           <>
         {dashboardPage === "checkin" && (
           <>
+        {!selected && (
         <section className="card search-card">
           <div className="section-heading">
-            <span className="step-number">1</span>
             <div>
               <h2>ค้นหาผู้สมัคร</h2>
               <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
@@ -960,6 +960,7 @@ export default function App() {
             </div>
           )}
         </section>
+        )}
 
         {!selected && !query.trim() && (
           <section className="card applicants-card" aria-label="รายชื่อผู้สมัคร">
@@ -1121,7 +1122,6 @@ export default function App() {
         {selected && (
           <section className="card registration-card">
             <div className="section-heading">
-              <span className="step-number">2</span>
               <div>
                 <h2>ข้อมูลผู้สมัคร</h2>
                 <p className="muted">ตรวจสอบข้อมูลก่อนเช็กอิน</p>
@@ -1161,7 +1161,6 @@ export default function App() {
 
                 <div className="photo-section">
                   <div className="section-heading compact-heading">
-                    <span className="step-number">3</span>
                     <div>
                       <h2>ถ่ายรูปคู่กับรหัส</h2>
                       <p className="muted">ให้ผู้ปกครองถือบัตรที่มีรหัสให้เห็นในภาพ</p>
