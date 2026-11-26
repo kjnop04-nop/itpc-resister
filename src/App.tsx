@@ -915,6 +915,52 @@ export default function App() {
           <>
         {dashboardPage === "checkin" && (
           <>
+        <section className="card search-card">
+          <div className="section-heading">
+            <span className="step-number">1</span>
+            <div>
+              <h2>ค้นหาผู้สมัคร</h2>
+              <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
+            </div>
+          </div>
+          <div className="search-control">
+            <span className="search-icon"><Icon name="search" /></span>
+            <input
+              aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
+              autoComplete="off"
+              placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelected(null);
+                setCheckin(null);
+                setPhoto(null);
+                setCameraOpen(false);
+                setError("");
+              }}
+            />
+            {searching && <span className="searching-label" role="status" aria-live="polite">กำลังค้นหา…</span>}
+          </div>
+          {!selected && candidates.length > 0 && (
+            <div className="candidate-list" aria-label="ผลการค้นหา">
+              {candidates.map((candidate) => (
+                <button className="candidate-row" key={candidate.id} onClick={() => void chooseRegistration(candidate)}>
+                  <span className="candidate-code">{candidate.application_code}</span>
+                  <span className="candidate-name">{candidate.title}{candidate.first_name} {candidate.last_name}</span>
+                  <span className="candidate-group">กลุ่ม {candidate.group_number}</span>
+                  <span className="candidate-arrow"><Icon name="chevron-right" /></span>
+                </button>
+              ))}
+            </div>
+          )}
+          {!selected && !searching && query.trim().length > 0 && candidates.length === 0 && !error && (
+            <div className="not-found">
+              <Icon name="search" className="empty-icon" />
+              <strong>ไม่พบข้อมูลผู้สมัคร ลองตรวจสอบคำค้นอีกครั้ง</strong>
+            </div>
+          )}
+        </section>
+
         {!selected && !query.trim() && (
           <section className="card applicants-card" aria-label="รายชื่อผู้สมัคร">
             <header className="applicants-heading">
@@ -991,52 +1037,6 @@ export default function App() {
             )}
           </section>
         )}
-
-        <section className="card search-card">
-          <div className="section-heading">
-            <span className="step-number">1</span>
-            <div>
-              <h2>ค้นหาผู้สมัคร</h2>
-              <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
-            </div>
-          </div>
-          <div className="search-control">
-            <span className="search-icon"><Icon name="search" /></span>
-            <input
-              aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
-              autoComplete="off"
-              placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
-              value={query}
-              onChange={(event) => {
-                setQuery(event.target.value);
-                setSelected(null);
-                setCheckin(null);
-                setPhoto(null);
-                setCameraOpen(false);
-                setError("");
-              }}
-            />
-            {searching && <span className="searching-label" role="status" aria-live="polite">กำลังค้นหา…</span>}
-          </div>
-          {!selected && candidates.length > 0 && (
-            <div className="candidate-list" aria-label="ผลการค้นหา">
-              {candidates.map((candidate) => (
-                <button className="candidate-row" key={candidate.id} onClick={() => void chooseRegistration(candidate)}>
-                  <span className="candidate-code">{candidate.application_code}</span>
-                  <span className="candidate-name">{candidate.title}{candidate.first_name} {candidate.last_name}</span>
-                  <span className="candidate-group">กลุ่ม {candidate.group_number}</span>
-                  <span className="candidate-arrow"><Icon name="chevron-right" /></span>
-                </button>
-              ))}
-            </div>
-          )}
-          {!selected && !searching && query.trim().length > 0 && candidates.length === 0 && !error && (
-            <div className="not-found">
-              <Icon name="search" className="empty-icon" />
-              <strong>ไม่พบข้อมูลผู้สมัคร ลองตรวจสอบคำค้นอีกครั้ง</strong>
-            </div>
-          )}
-        </section>
 
           </>
         )}
