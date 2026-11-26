@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { currentBangkokMinutes, isWithinSlot } from "./lib/schedule";
+import { currentBangkokMinutes, getGroupSchedule, isWithinSlot } from "./lib/schedule";
 import { apiRequest, jsonBody } from "./lib/api";
 
 type StaffSession = {
@@ -777,6 +777,9 @@ export default function App() {
   const checkedInPercentage = groupCheckinSummary && groupCheckinSummary.total > 0
     ? (groupCheckinSummary.checked_in / groupCheckinSummary.total) * 100
     : 0;
+  const selectedGroupSchedule = selectedGroup === null
+    ? null
+    : getGroupSchedule(selectedGroup);
   return (
     <main className="screen">
       <div className="app-shell">
@@ -1009,6 +1012,18 @@ export default function App() {
                     </span>
                   )}
                 </header>
+                {selectedGroupSchedule && (
+                  <div className="group-schedule">
+                    <div className="group-schedule-item">
+                      <span>เวลาลงทะเบียน</span>
+                      <strong>{selectedGroupSchedule.registrationTime}</strong>
+                    </div>
+                    <div className="group-schedule-item">
+                      <span>เวลาทำกิจกรรม</span>
+                      <strong>{selectedGroupSchedule.activityTime}</strong>
+                    </div>
+                  </div>
+                )}
                 {applicantsLoading ? (
                   <div className="status status-pending group-loading" role="status" aria-live="polite">
                     กำลังโหลดรายชื่อกลุ่ม {selectedGroup}…

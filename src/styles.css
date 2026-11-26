@@ -337,6 +337,30 @@ button {
   margin-top: 18px;
 }
 
+.group-schedule {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fbf8f2;
+}
+
+.group-schedule-item {
+  display: grid;
+  gap: 3px;
+}
+
+.group-schedule-item span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.group-schedule-item strong {
+  color: #39343c;
+  font-size: 15px;
+}
+
 .group-applicant-count {
   color: var(--muted);
   font-size: 14px;
@@ -1365,6 +1389,15 @@ button {
   .group-button {
     min-height: 54px;
     font-size: 14px;
+  }
+
+  .group-schedule {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .group-schedule-item strong {
+    font-size: 13px;
   }
 
   .group-attendance {
