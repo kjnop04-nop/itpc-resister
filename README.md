@@ -83,6 +83,7 @@
 - ถ้าขึ้นว่า ID หรือรหัสผ่านไม่ถูกต้อง บัญชีอาจยังไม่ได้ถูกนำเข้าจาก Supabase Authentication เดิม (รัน migration `20261125110000_staff_accounts_and_admin.sql`) หรือรหัสผ่านไม่ตรงกับบัญชี
 - ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบแปดตามลำดับ และตาราง `itpc_register_staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
 - ถ้าแจ้ง environment variables ให้ตั้ง `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` และ `SESSION_SECRET` ใน environment ฝั่ง server (รวมถึง Vercel Project Settings > Environment Variables เมื่อนำขึ้น production) แล้ว redeploy
+- ถ้าบันทึกการลงทะเบียนแล้วได้ `Active staff access required` ให้ตรวจว่า `SUPABASE_JWT_SECRET` เป็น JWT Secret แบบ HS256 ของ Supabase project เดียวกัน และบัญชีเจ้าหน้าที่มีสถานะ `active` จากนั้นเริ่ม server ใหม่
 - ข้อผิดพลาดอื่นให้ดู function logs ใน Vercel หรือ terminal ที่รัน `npm run dev`; รายละเอียดภายในจะไม่ถูกส่งกลับไปยังหน้าเว็บ
 
 ## นำเข้ารายชื่อจาก Excel

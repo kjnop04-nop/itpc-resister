@@ -74,4 +74,13 @@ describe("createSupabaseAccessToken", () => {
       `Bearer ${createSupabaseAccessToken(staff)}`,
     );
   });
+
+  it("does not fall back to an anonymous client without a signing secret", () => {
+    delete process.env.SUPABASE_JWT_SECRET;
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_ANON_KEY = "test-anon-key";
+
+    expect(() => getStaffClient({ id: "dd6c94a7-6a5e-47e3-aada-ff672845941e" }))
+      .toThrow("SUPABASE_JWT_SECRET must contain at least 32 characters");
+  });
 });

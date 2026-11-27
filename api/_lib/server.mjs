@@ -98,16 +98,15 @@ export function getAnonClient() {
 }
 
 export function getStaffClient(staff) {
-  const { url, anonKey } = getSupabaseConfig();
-  const secret = process.env.SUPABASE_JWT_SECRET;
-  if (secret && secret.length >= 32 && staff) {
-    const accessToken = createSupabaseAccessToken(staff);
-    return createClient(url, anonKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-      global: { headers: { Authorization: `Bearer ${accessToken}` } },
-    });
+  if (!staff) {
+    throw new Error("An active staff account is required");
   }
-  return getAnonClient();
+  const { url, anonKey } = getSupabaseConfig();
+  const accessToken = createSupabaseAccessToken(staff);
+  return createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
 }
 
 function signPayload(payload, secret) {
@@ -211,6 +210,7 @@ function apiFailureMessage(error) {
   const code = error && typeof error === "object" && "code" in error
     ? error.code
     : undefined;
+  const message = error instanceof Error ? error.message : "";
 
   if (code === "PGRST202") {
     return "ฐานข้อมูลยังไม่มีฟังก์ชัน API ที่ต้องใช้ กรุณารัน migrations ล่าสุดตาม README.md";
@@ -223,6 +223,12 @@ function apiFailureMessage(error) {
   }
   if (code === "42501") {
     return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบ JWT และ RLS migrations ใน Supabase";
+  }
+  if (message.includes("SUPABASE_JWT_SECRET")) {
+    return "กรุณาตั้งค่า SUPABASE_JWT_SECRET ให้ตรงกับ JWT Secret แบบ HS256 ของ Supabase แล้วเริ่ม server ใหม่";
+  }
+  if (code === "P0001" && message === "Active staff access required") {
+    return "Supabase ไม่ยืนยันบัญชีเจ้าหน้าที่ กรุณาตรวจสอบ SUPABASE_JWT_SECRET แบบ HS256 และสถานะบัญชีว่า active";
   }
   if (process.env.NODE_ENV !== "production" && error instanceof Error) {
     return `เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: ${error.message}`;
