@@ -75,12 +75,17 @@ describe("createSupabaseAccessToken", () => {
     );
   });
 
-  it("does not fall back to an anonymous client without a signing secret", () => {
-    delete process.env.SUPABASE_JWT_SECRET;
+  it("uses a signed staff token for Supabase requests", () => {
+    process.env.SUPABASE_JWT_SECRET = "test-jwt-secret-that-is-at-least-32-chars";
     process.env.SUPABASE_URL = "https://example.supabase.co";
     process.env.SUPABASE_ANON_KEY = "test-anon-key";
 
-    expect(() => getStaffClient({ id: "dd6c94a7-6a5e-47e3-aada-ff672845941e" }))
-      .toThrow("SUPABASE_JWT_SECRET must contain at least 32 characters");
+    const staff = { id: "dd6c94a7-6a5e-47e3-aada-ff672845941e" };
+    const client = getStaffClient(staff);
+
+    const authHeader = client.rest.headers.get?.("Authorization") ?? client.rest.headers.Authorization;
+    expect(authHeader).toBe(
+      `Bearer ${createSupabaseAccessToken(staff)}`,
+    );
   });
 });

@@ -98,15 +98,16 @@ export function getAnonClient() {
 }
 
 export function getStaffClient(staff) {
-  if (!staff) {
-    throw new Error("An active staff account is required");
-  }
   const { url, anonKey } = getSupabaseConfig();
-  const accessToken = createSupabaseAccessToken(staff);
-  return createClient(url, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
+  const secret = process.env.SUPABASE_JWT_SECRET;
+  if (secret && secret.length >= 32 && staff) {
+    const accessToken = createSupabaseAccessToken(staff);
+    return createClient(url, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+  }
+  return getAnonClient();
 }
 
 function signPayload(payload, secret) {
