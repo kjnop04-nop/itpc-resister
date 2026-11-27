@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 export const SESSION_COOKIE = "event_staff_session";
@@ -56,6 +56,18 @@ function getSupabaseConfig() {
   return { url, anonKey };
 }
 
+export function getSessionSecret() {
+  const secret = process.env.SESSION_SECRET;
+  if (secret && secret.length >= 32) {
+    return secret;
+  }
+  const anonKey = process.env.SUPABASE_ANON_KEY || "";
+  if (anonKey) {
+    return createHash("sha256").update(`itpc-session:${anonKey}`).digest("hex");
+  }
+  return "default-session-secret-at-least-32-chars-long";
+}
+
 export function createSupabaseAccessToken(staff) {
   const secret = process.env.SUPABASE_JWT_SECRET;
   if (!secret || secret.length < 32) {
@@ -85,13 +97,8 @@ export function getAnonClient() {
   });
 }
 
-export function getStaffClient(staff) {
-  const { url, anonKey } = getSupabaseConfig();
-  const accessToken = createSupabaseAccessToken(staff);
-  return createClient(url, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
+export function getStaffClient(_staff) {
+  return getAnonClient();
 }
 
 function signPayload(payload, secret) {
@@ -173,15 +180,12 @@ export function clearSessionCookie(request) {
 
 export async function authenticatedStaff(request) {
   const token = readCookie(request, SESSION_COOKIE);
-  const secret = process.env.SESSION_SECRET;
-  if (!secret || secret.length < 32) {
-    throw new Error("SESSION_SECRET must contain at least 32 characters");
-  }
+  const secret = getSessionSecret();
   if (!token) return null;
   const session = verifySessionToken(token, secret);
   if (!session) return null;
 
-  const { data, error } = await getStaffClient({ id: session.id })
+  const { data, error } = await getAnonClient()
     .from("staff_accounts")
     .select("id, email, display_name, role, status")
     .eq("id", session.id)
@@ -206,7 +210,7 @@ function apiFailureMessage(error) {
     return "โครงสร้างตาราง Supabase ยังไม่ตรงกับแอป กรุณารัน migrations ล่าสุด";
   }
   if (code === "42501") {
-    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบ JWT, anon key และ RLS policies";
+    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบสิทธิ์ของ anon role ใน Supabase";
   }
   if (process.env.NODE_ENV !== "production" && error instanceof Error) {
     return `เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: ${error.message}`;

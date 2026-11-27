@@ -151,9 +151,9 @@ async function main() {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceRoleKey = process.env.SUPABASE_ANON_KEY;
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error("ต้องกำหนด SUPABASE_URL และ SUPABASE_SERVICE_ROLE_KEY ใน environment");
+    throw new Error("ต้องกำหนด SUPABASE_URL และ SUPABASE_ANON_KEY ใน environment");
   }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey, {

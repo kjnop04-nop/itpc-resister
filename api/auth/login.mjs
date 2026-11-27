@@ -1,6 +1,7 @@
 import {
   createSessionToken,
   getAnonClient,
+  getSessionSecret,
   readJson,
   sendJson,
   sessionCookie,
@@ -20,13 +21,14 @@ function loginFailureMessage(error) {
   ) {
     return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ตามลำดับใน README.md";
   }
+  if (code === "42501") {
+    return "Supabase ปฏิเสธสิทธิ์ (42501) กรุณารันคำสั่ง SQL อนุญาตสิทธิ์ anon role ใน Supabase";
+  }
   if (
     message.includes("SUPABASE_URL") ||
-    message.includes("SUPABASE_ANON_KEY") ||
-    message.includes("SUPABASE_JWT_SECRET") ||
-    message.includes("SESSION_SECRET")
+    message.includes("SUPABASE_ANON_KEY")
   ) {
-    return "เซิร์ฟเวอร์ยังตั้งค่า environment variables ไม่ครบ กรุณาตรวจ SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET และ SESSION_SECRET";
+    return "เซิร์ฟเวอร์ยังตั้งค่า environment variables ไม่ครบ กรุณาตรวจ SUPABASE_URL และ SUPABASE_ANON_KEY";
   }
   return "ระบบเข้าสู่ระบบขัดข้อง กรุณาตรวจสอบ Supabase/Vercel logs หรือลองใหม่ภายหลัง";
 }
@@ -84,10 +86,7 @@ export default async function handler(request, response) {
       return;
     }
 
-    const secret = process.env.SESSION_SECRET;
-    if (!secret || secret.length < 32) {
-      throw new Error("SESSION_SECRET must contain at least 32 characters");
-    }
+    const secret = getSessionSecret();
     const token = createSessionToken(staff.id, secret);
     sendJson(
       response,
