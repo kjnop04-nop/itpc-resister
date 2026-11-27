@@ -83,7 +83,11 @@ export default async function handler(request, response) {
         return;
       }
       if (error?.code === "42501") {
-        sendJson(response, 403, { error: "ไม่มีสิทธิ์สร้างบัญชีระดับนี้" });
+        sendJson(response, 403, {
+          error: role === "admin"
+            ? "ฐานข้อมูลยังไม่รองรับการสร้างแอดมินหลายคน กรุณารัน migration 20261127110000_allow_multiple_admins.sql"
+            : "ไม่มีสิทธิ์สร้างบัญชีระดับนี้",
+        });
         return;
       }
       if (error) throw error;
@@ -115,7 +119,19 @@ export default async function handler(request, response) {
         p_role: body.role,
       });
       if (error?.code === "42501") {
-        sendJson(response, 403, { error: "ไม่มีสิทธิ์จัดการบัญชีนี้ หรือไม่สามารถปิด/ลดสิทธิ์แอดมินคนสุดท้ายได้" });
+        const detail = error.message || "";
+        let message = "ไม่มีสิทธิ์จัดการบัญชีนี้";
+        if (detail.includes("last active administrator")) {
+          message = "ไม่สามารถปิดหรือลดสิทธิ์แอดมินที่ใช้งานได้คนสุดท้าย";
+        } else if (detail.includes("your own administrator access")) {
+          message = "ไม่สามารถลดสิทธิ์บัญชีของตัวเองได้";
+        } else if (
+          manager.role === "superadmin" &&
+          (detail.includes("Administrator access required") || detail.includes("System manager access required"))
+        ) {
+          message = "ฟังก์ชันจัดการสิทธิ์ในฐานข้อมูลยังเป็นเวอร์ชันเก่า กรุณารัน migration 20261127120000_superadmin_member_updates.sql";
+        }
+        sendJson(response, 403, { error: message });
         return;
       }
       if (error) throw error;
