@@ -19,11 +19,11 @@
    - `supabase/migrations/20261127110000_allow_multiple_admins.sql`
    - `supabase/migrations/20261127120000_superadmin_member_updates.sql`
    - `supabase/migrations/20261127130000_fix_admin_role_assignment.sql`
-   - `supabase/migrations/20261127140000_anon_key_custom_jwt_rls.sql`
    - `supabase/migrations/20261127150000_allow_anon_role_full_access.sql`
    - `supabase/migrations/20261127160000_student_nickname_parent_phone.sql`
    - `supabase/migrations/20261127170000_prefix_application_tables.sql`
-   migration ล่าสุดเปลี่ยนชื่อตารางข้อมูลของแอปที่มีอยู่ให้ขึ้นต้นด้วย `itpc_register_` และอัปเดตฟังก์ชัน SQL ที่อ้างถึงตารางเหล่านั้น
+   - `supabase/migrations/20261127180000_restore_role_based_rls.sql`
+   ตารางใหม่ของแอปใน schema `public` ต้องตั้งชื่อขึ้นต้นด้วย `itpc_register_` เสมอ; migration `20261127170000_prefix_application_tables.sql` เปลี่ยนชื่อตารางเดิมให้เป็นรูปแบบนี้ และ migration ล่าสุดตั้ง RLS แบบ standalone โดยไม่ต้องใช้ `20261127140000_anon_key_custom_jwt_rls.sql`
    migration `20261127110000_allow_multiple_admins.sql` อนุญาตให้แอดมินทั่วไปสร้างบัญชีแอดมินเพิ่มได้ โดยแอดมินยังจัดการบัญชีแอดมินคนอื่นไม่ได้
    migration `20261127120000_superadmin_member_updates.sql` ปรับฟังก์ชันเลื่อน/แก้สิทธิ์บัญชีให้แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่ได้
    migration `20261127130000_fix_admin_role_assignment.sql` แก้การตรวจสิทธิ์ตอนเลื่อนเจ้าหน้าที่เป็นแอดมิน
@@ -68,7 +68,7 @@
    ```
 
    นำผลลัพธ์ไปตั้งเป็น `SESSION_SECRET` (อย่างน้อย 32 ตัวอักษร) ใช้ anon/public key จาก Project Settings > API สำหรับ Supabase client และกำหนด JWT secret แบบ HS256 ของโปรเจกต์เป็น `SUPABASE_JWT_SECRET` เพื่อให้ API ออก JWT อายุสั้นตาม session ที่ตรวจสอบแล้ว ห้ามใช้ prefix `VITE_` หรือส่ง JWT secret ไปยัง browser
-   migration ล่าสุดจะปิดการอ่าน/เขียนตารางโดย anon โดยตรง และกำหนด RLS สำหรับ JWT ของเจ้าหน้าที่ที่ API ออกให้ หลังรัน migration แล้ว API runtime ไม่ใช้ service-role key ส่วนสคริปต์นำเข้าจากไฟล์ Excel แบบ local ในหัวข้อด้านล่างยังต้องใช้ service-role key แยกต่างหาก
+   migration ล่าสุดจะปิดการอ่าน/เขียนตารางโดย anon โดยตรง และกำหนด RLS สำหรับ JWT ของเจ้าหน้าที่ที่ API ออกให้ ต้องใช้ `SUPABASE_JWT_SECRET` ที่ตรงกับ JWT secret แบบ HS256 ของโปรเจกต์ หลังรัน migration แล้ว API runtime ไม่ใช้ service-role key ส่วนสคริปต์นำเข้าจากไฟล์ Excel แบบ local ในหัวข้อด้านล่างยังต้องใช้ service-role key แยกต่างหาก
 6. ติดตั้งและเปิดแอป:
 
    ```powershell

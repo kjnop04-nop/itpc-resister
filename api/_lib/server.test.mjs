@@ -1,14 +1,26 @@
 import { createHmac } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
-import { createSupabaseAccessToken } from "./server.mjs";
+import { createSupabaseAccessToken, getStaffClient } from "./server.mjs";
 
 const originalJwtSecret = process.env.SUPABASE_JWT_SECRET;
+const originalSupabaseUrl = process.env.SUPABASE_URL;
+const originalAnonKey = process.env.SUPABASE_ANON_KEY;
 
 afterEach(() => {
   if (originalJwtSecret === undefined) {
     delete process.env.SUPABASE_JWT_SECRET;
   } else {
     process.env.SUPABASE_JWT_SECRET = originalJwtSecret;
+  }
+  if (originalSupabaseUrl === undefined) {
+    delete process.env.SUPABASE_URL;
+  } else {
+    process.env.SUPABASE_URL = originalSupabaseUrl;
+  }
+  if (originalAnonKey === undefined) {
+    delete process.env.SUPABASE_ANON_KEY;
+  } else {
+    process.env.SUPABASE_ANON_KEY = originalAnonKey;
   }
 });
 
@@ -46,6 +58,19 @@ describe("createSupabaseAccessToken", () => {
     delete process.env.SUPABASE_JWT_SECRET;
     expect(() => createSupabaseAccessToken({ id: "staff-id" })).toThrow(
       "SUPABASE_JWT_SECRET must contain at least 32 characters",
+    );
+  });
+
+  it("uses a signed staff token for Supabase requests", () => {
+    process.env.SUPABASE_JWT_SECRET = "test-jwt-secret-that-is-at-least-32-chars";
+    process.env.SUPABASE_URL = "https://example.supabase.co";
+    process.env.SUPABASE_ANON_KEY = "test-anon-key";
+
+    const staff = { id: "dd6c94a7-6a5e-47e3-aada-ff672845941e" };
+    const client = getStaffClient(staff);
+
+    expect(client.rest.headers.Authorization).toBe(
+      `Bearer ${createSupabaseAccessToken(staff)}`,
     );
   });
 });

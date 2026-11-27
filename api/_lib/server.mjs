@@ -97,8 +97,13 @@ export function getAnonClient() {
   });
 }
 
-export function getStaffClient(_staff) {
-  return getAnonClient();
+export function getStaffClient(staff) {
+  const { url, anonKey } = getSupabaseConfig();
+  const accessToken = createSupabaseAccessToken(staff);
+  return createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+  });
 }
 
 function signPayload(payload, secret) {
@@ -185,7 +190,7 @@ export async function authenticatedStaff(request) {
   const session = verifySessionToken(token, secret);
   if (!session) return null;
 
-  const { data, error } = await getAnonClient()
+  const { data, error } = await getStaffClient({ id: session.id })
     .from("itpc_register_staff_accounts")
     .select("id, email, display_name, role, status")
     .eq("id", session.id)
@@ -210,7 +215,7 @@ function apiFailureMessage(error) {
     return "โครงสร้างตาราง Supabase ยังไม่ตรงกับแอป กรุณารัน migrations ล่าสุด";
   }
   if (code === "42501") {
-    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบสิทธิ์ของ anon role ใน Supabase";
+    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบ JWT และ RLS migrations ใน Supabase";
   }
   if (process.env.NODE_ENV !== "production" && error instanceof Error) {
     return `เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: ${error.message}`;

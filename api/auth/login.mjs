@@ -22,7 +22,7 @@ function loginFailureMessage(error) {
     return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ตามลำดับใน README.md";
   }
   if (code === "42501") {
-    return "Supabase ปฏิเสธสิทธิ์ (42501) กรุณารันคำสั่ง SQL อนุญาตสิทธิ์ anon role ใน Supabase";
+    return "Supabase ปฏิเสธสิทธิ์ (42501) กรุณาตรวจสอบสิทธิ์เรียกฟังก์ชัน verify_staff_login";
   }
   if (
     message.includes("SUPABASE_URL") ||
