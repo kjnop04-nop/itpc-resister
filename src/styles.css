@@ -1182,7 +1182,6 @@ button {
 }
 
 .camera-dialog {
-  display: flex;
   flex-direction: column;
   width: min(calc(100vw - 24px), 900px);
   height: min(90vh, 720px);
@@ -1198,6 +1197,10 @@ button {
   background: #fff;
   color: #2f2a32;
   box-shadow: 0 20px 70px rgb(31 26 34 / 28%);
+}
+
+.camera-dialog[open] {
+  display: flex;
 }
 
 .camera-dialog::backdrop {
