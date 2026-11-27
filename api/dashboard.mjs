@@ -10,6 +10,11 @@ export default async function handler(request, response) {
   }
 
   await withAuthenticatedStaff(request, response, async () => {
+    const applicationYear = new URL(request.url, "http://localhost").searchParams.get("application_year") || "";
+    if (!/^[1-9]\d{3}$/.test(applicationYear)) {
+      sendJson(response, 400, { error: "กรุณาเลือกปีการศึกษาให้ถูกต้อง" });
+      return;
+    }
     const client = getAdminClient();
     const groups = Array.from({ length: GROUP_COUNT }, (_, index) => ({
       group_number: index + 1,
@@ -23,6 +28,7 @@ export default async function handler(request, response) {
       const { data, error } = await client
         .from("registrations")
         .select("id, group_number")
+        .eq("application_year", applicationYear)
         .order("id", { ascending: true })
         .range(offset, offset + PAGE_SIZE - 1);
       if (error) throw error;
@@ -40,7 +46,8 @@ export default async function handler(request, response) {
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await client
         .from("checkins")
-        .select("id, registration_id")
+        .select("id, registration_id, registrations!inner(application_year)")
+        .eq("registrations.application_year", applicationYear)
         .is("voided_at", null)
         .order("id", { ascending: true })
         .range(offset, offset + PAGE_SIZE - 1);

@@ -53,7 +53,7 @@ export default async function handler(request, response) {
         }
         const { data, error } = await client
           .from("checkins")
-          .select("checked_in_at, staff_label, note")
+          .select("id, checked_in_at, staff_label, note")
           .eq("registration_id", registrationId)
           .is("voided_at", null)
           .maybeSingle();
@@ -63,12 +63,18 @@ export default async function handler(request, response) {
       }
 
       const search = (params.get("search") || "").trim().slice(0, 100);
+      const applicationYear = params.get("application_year") || "";
+      if (!/^[1-9]\d{3}$/.test(applicationYear)) {
+        sendJson(response, 400, { error: "กรุณาเลือกปีการศึกษาให้ถูกต้อง" });
+        return;
+      }
       const requestedOffset = Number(params.get("offset") || 0);
       if (!Number.isSafeInteger(requestedOffset) || requestedOffset < 0) {
         sendJson(response, 400, { error: "ตำแหน่งรายการไม่ถูกต้อง" });
         return;
       }
       const { data, error } = await client.rpc("list_active_checkins", {
+        p_application_year: applicationYear,
         p_search: search,
         p_limit: 50,
         p_offset: requestedOffset,
@@ -141,6 +147,27 @@ export default async function handler(request, response) {
       return;
     }
 
+    const { data: registration, error: registrationError } = await client
+      .from("registrations")
+      .select("application_year")
+      .eq("id", registrationId)
+      .maybeSingle();
+    if (registrationError) throw registrationError;
+    if (!registration) {
+      sendJson(response, 404, { error: "ไม่พบข้อมูลผู้สมัคร" });
+      return;
+    }
+    const { data: activeYear, error: activeYearError } = await client
+      .from("academic_year_settings")
+      .select("application_year")
+      .eq("is_active", true)
+      .single();
+    if (activeYearError) throw activeYearError;
+    if (registration.application_year !== activeYear.application_year) {
+      sendJson(response, 409, { error: "ปีการศึกษานี้เป็นข้อมูลย้อนหลัง ไม่สามารถลงทะเบียนเพิ่มได้" });
+      return;
+    }
+
     const photo = Buffer.from(photoBase64, "base64");
     if (
       photo.length === 0 ||
@@ -173,12 +200,16 @@ export default async function handler(request, response) {
         sendJson(response, 409, { error: "ผู้สมัครรายนี้ลงทะเบียนแล้ว" });
         return;
       }
+      if (insertError.code === "22023") {
+        sendJson(response, 409, { error: "ปีการศึกษานี้เป็นข้อมูลย้อนหลัง ไม่สามารถลงทะเบียนเพิ่มได้" });
+        return;
+      }
       throw insertError;
     }
 
     const { data, error: lookupError } = await client
       .from("checkins")
-      .select("checked_in_at, staff_label, note")
+      .select("id, checked_in_at, staff_label, note")
       .eq("registration_id", registrationId)
       .is("voided_at", null)
       .single();

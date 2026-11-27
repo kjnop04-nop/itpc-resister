@@ -51,7 +51,7 @@ button {
 }
 
 .app-shell {
-  width: min(100%, 940px);
+  width: min(100%, 1080px);
   margin: 0 auto;
 }
 
@@ -68,8 +68,9 @@ button {
 }
 
 .topbar {
+  flex-wrap: wrap;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px 24px;
   margin: 0 0 24px;
 }
 
@@ -108,7 +109,13 @@ button {
 }
 
 .brand {
+  min-width: 0;
+  flex: 1 1 400px;
   gap: 14px;
+}
+
+.brand > div {
+  min-width: 0;
 }
 
 .brand-logo {
@@ -144,7 +151,15 @@ button {
 }
 
 .staff-menu {
-  gap: 10px;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.staff-menu .button {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .staff-email {
@@ -1033,13 +1048,25 @@ button {
 }
 
 .status-checked {
+  flex-wrap: wrap;
+  align-items: center;
   border-color: #efd9dc;
   background: #f8e9eb;
   color: #39343c;
 }
 
+.status-checked > div {
+  flex: 1;
+  min-width: 140px;
+}
+
 .status-checked .status-icon {
   background: #f0dadd;
+}
+
+.applicant-cancel-checkin {
+  flex: 0 0 auto;
+  margin: 0 0 0 auto;
 }
 
 .status-pending {
@@ -1453,6 +1480,111 @@ button {
   background: #fbf8f3;
 }
 
+.student-data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.student-data-notes {
+  margin: 0;
+  padding-left: 22px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.student-data-notes li + li {
+  margin-top: 6px;
+}
+
+.academic-year-picker {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.academic-year-picker select,
+.year-create-form input,
+.year-round-card input {
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #2f2a32;
+  font: inherit;
+}
+
+.academic-year-picker select {
+  max-width: 190px;
+}
+
+.year-create-form,
+.year-settings-actions {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.year-create-form {
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbf8f3;
+}
+
+.year-create-form label,
+.year-round-card label {
+  display: grid;
+  gap: 5px;
+  color: #39343c;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.year-settings-actions {
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.year-settings-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.year-round-list {
+  display: grid;
+  gap: 12px;
+}
+
+.year-round-card {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  min-width: 0;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.year-round-card legend {
+  padding: 0 6px;
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .member-create-fields {
   display: grid;
   width: 100%;
@@ -1605,7 +1737,6 @@ button {
   }
 
   .topbar {
-    flex-wrap: wrap;
     align-items: flex-start;
     margin-bottom: 18px;
   }
@@ -1638,21 +1769,44 @@ button {
   }
 
   .staff-menu {
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-    margin-left: auto;
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 8px;
+    margin: 0;
   }
 
   .staff-email {
-    max-width: 130px;
+    max-width: 100%;
+    grid-column: 1 / -1;
     font-size: 14px;
   }
 
   .staff-menu .button {
+    width: 100%;
+    min-width: 0;
     min-height: 44px;
-    padding: 7px 8px;
-    font-size: 14px;
+    padding: 7px;
+    font-size: 13px;
+    line-height: 1.35;
+    white-space: normal;
+  }
+
+  .academic-year-picker {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .academic-year-picker select {
+    width: 100%;
+    max-width: none;
+  }
+
+  .year-round-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 12px 9px;
   }
 
   .search-card,

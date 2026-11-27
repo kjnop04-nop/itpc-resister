@@ -8,6 +8,11 @@ export default async function handler(request, response) {
 
   await withAuthenticatedStaff(request, response, async () => {
     const params = new URL(request.url, "http://localhost").searchParams;
+    const applicationYear = params.get("application_year") || "";
+    if (!/^[1-9]\d{3}$/.test(applicationYear)) {
+      sendJson(response, 400, { error: "กรุณาเลือกปีการศึกษาให้ถูกต้อง" });
+      return;
+    }
     const query = params.get("q")?.trim() || "";
     if (query.length > 100) {
       sendJson(response, 400, { error: "กรุณากรอกคำค้นหาไม่เกิน 100 ตัวอักษร" });
@@ -41,6 +46,7 @@ export default async function handler(request, response) {
       if (groupNumber !== null) {
         registrationQuery = registrationQuery.eq("group_number", groupNumber);
       }
+      registrationQuery = registrationQuery.eq("application_year", applicationYear);
       const { data, error } = await registrationQuery.range(offset, offset + pageSize);
       if (error) throw error;
 
@@ -69,10 +75,12 @@ export default async function handler(request, response) {
           client
             .from("registrations")
             .select("id", { count: "exact", head: true })
+            .eq("application_year", applicationYear)
             .eq("group_number", groupNumber),
           client
             .from("checkins")
-            .select("id, registrations!inner(group_number)", { count: "exact", head: true })
+            .select("id, registrations!inner(group_number, application_year)", { count: "exact", head: true })
+            .eq("registrations.application_year", applicationYear)
             .eq("registrations.group_number", groupNumber)
             .is("voided_at", null),
         ]);
@@ -94,6 +102,7 @@ export default async function handler(request, response) {
 
     const { data, error } = await getAdminClient().rpc("search_registrations", {
       p_query: query,
+      p_application_year: applicationYear,
       p_limit: 10,
     });
     if (error) throw error;

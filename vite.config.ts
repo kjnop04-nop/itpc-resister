@@ -9,7 +9,10 @@ import login from "./api/auth/login.mjs";
 import logout from "./api/auth/logout.mjs";
 import session from "./api/auth/session.mjs";
 import registrations from "./api/registrations.mjs";
+import importRegistrations from "./api/registrations/import.mjs";
+import exportRegistrations from "./api/registrations/export.mjs";
 import dashboard from "./api/dashboard.mjs";
+import academicYears from "./api/academic-years.mjs";
 
 const apiRoutes = new Map([
   ["/api/auth/login", login],
@@ -18,7 +21,10 @@ const apiRoutes = new Map([
   ["/api/auth/session", session],
   ["/api/admin/members", members],
   ["/api/registrations", registrations],
+  ["/api/registrations/import", importRegistrations],
+  ["/api/registrations/export", exportRegistrations],
   ["/api/dashboard", dashboard],
+  ["/api/academic-years", academicYears],
   ["/api/checkins", checkins],
 ]);
 

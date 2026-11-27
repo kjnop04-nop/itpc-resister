@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
-import { currentBangkokMinutes, getGroupSchedule, isWithinSlot } from "./lib/schedule";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { currentBangkokMinutes, DEFAULT_SCHEDULE, getGroupSchedule, isWithinSlot, type ScheduleRound } from "./lib/schedule";
 import { apiRequest, jsonBody } from "./lib/api";
+import { parseStudentCsv, type StudentImportRow } from "./lib/studentCsv";
+import { formatAcademicYear } from "./lib/academicYear";
 
 type StaffSession = {
   id: string;
@@ -35,6 +37,7 @@ type Registration = {
 };
 
 type ExistingCheckin = {
+  id: string;
   checked_in_at: string;
   staff_label: string;
   note: string | null;
@@ -72,6 +75,12 @@ type DashboardSummary = GroupCheckinSummary & {
   groups: DashboardGroupSummary[];
 };
 
+type AcademicYearSetting = {
+  application_year: string;
+  is_active: boolean;
+  schedule: ScheduleRound[];
+};
+
 type DashboardPage = "overview" | "checkin" | "group" | "applicant" | "checked-in";
 
 const GROUP_COUNT = 30;
@@ -80,13 +89,16 @@ const ROUND_COUNT = GROUP_COUNT / GROUPS_PER_ROUND;
 const GROUP_NUMBERS = Array.from({ length: GROUP_COUNT }, (_, index) => index + 1);
 
 const SYSTEM_NAME_PREFIX = "ระบบลงทะเบียนเพื่อคัดเลือกนักเรียนระดับอนุบาล";
-const SYSTEM_NAME_YEAR = "ปีการศึกษา 2570";
 
-function SystemTitle() {
+function SystemTitle({ applicationYear }: { applicationYear: string }) {
   return (
     <>
       {SYSTEM_NAME_PREFIX}{" "}
-      <span className="system-title-year">{SYSTEM_NAME_YEAR}</span>
+      {applicationYear && (
+        <span className="system-title-year">
+          ปีการศึกษา {formatAcademicYear(applicationYear)}
+        </span>
+      )}
     </>
   );
 }
@@ -187,6 +199,18 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [adminOpen, setAdminOpen] = useState(false);
+  const [studentDataOpen, setStudentDataOpen] = useState(false);
+  const [yearSettingsOpen, setYearSettingsOpen] = useState(false);
+  const [studentDataBusy, setStudentDataBusy] = useState<"import" | "export" | null>(null);
+  const [academicYears, setAcademicYears] = useState<AcademicYearSetting[]>([]);
+  const [academicYearsLoading, setAcademicYearsLoading] = useState(false);
+  const [activeAcademicYear, setActiveAcademicYear] = useState("");
+  const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
+  const [newAcademicYear, setNewAcademicYear] = useState("");
+  const [scheduleDraft, setScheduleDraft] = useState<ScheduleRound[]>(
+    DEFAULT_SCHEDULE.map((round) => ({ ...round })),
+  );
+  const [academicYearBusy, setAcademicYearBusy] = useState(false);
   const [members, setMembers] = useState<StaffAccount[]>([]);
   const [adminLoading, setAdminLoading] = useState(false);
   const [adminBusyId, setAdminBusyId] = useState<string | null>(null);
@@ -233,6 +257,13 @@ export default function App() {
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
   const checkinSearchRef = useRef(checkinSearch);
   const selectedGroupRef = useRef(selectedGroup);
+  const studentFileRef = useRef<HTMLInputElement>(null);
+
+  const selectedAcademicYearSettings = academicYears.find(
+    ({ application_year }) => application_year === selectedAcademicYear,
+  );
+  const selectedYearSchedule = selectedAcademicYearSettings?.schedule || DEFAULT_SCHEDULE;
+  const isActiveAcademicYear = selectedAcademicYear === activeAcademicYear;
 
   useEffect(() => {
     if (!photo) {
@@ -261,6 +292,43 @@ export default function App() {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    setAcademicYearsLoading(true);
+    void apiRequest<{
+      years: AcademicYearSetting[];
+      active_year: string;
+    }>("/api/academic-years")
+      .then(({ years, active_year: activeYear }) => {
+        if (cancelled) return;
+        setAcademicYears(years);
+        setActiveAcademicYear(activeYear);
+        setSelectedAcademicYear((current) =>
+          years.some(({ application_year }) => application_year === current)
+            ? current
+            : activeYear,
+        );
+        setNewAcademicYear(String(Number(activeYear) + 1));
+      })
+      .catch((yearError) => {
+        if (!cancelled) {
+          setError(`โหลดปีการศึกษาไม่สำเร็จ: ${yearError instanceof Error ? yearError.message : "เกิดข้อผิดพลาด"}`);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setAcademicYearsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
+
+  useEffect(() => {
+    if (!selectedAcademicYearSettings) return;
+    setScheduleDraft(selectedAcademicYearSettings.schedule.map((round) => ({ ...round })));
+  }, [selectedAcademicYear, selectedAcademicYearSettings]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setClock(Date.now()), 15_000);
@@ -301,7 +369,7 @@ export default function App() {
   }, [dashboardPage, selected]);
 
   useEffect(() => {
-    if (!session || dashboardPage !== "checkin") {
+    if (!session || !selectedAcademicYear || dashboardPage !== "checkin") {
       setSearching(false);
       return;
     }
@@ -317,7 +385,7 @@ export default function App() {
     const timer = window.setTimeout(async () => {
       try {
         const { registrations } = await apiRequest<{ registrations: Registration[] }>(
-          `/api/registrations?q=${encodeURIComponent(searchTerm)}`,
+          `/api/registrations?q=${encodeURIComponent(searchTerm)}&application_year=${selectedAcademicYear}`,
         );
         if (cancelled) return;
         setError("");
@@ -335,11 +403,12 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [query, session, dashboardPage]);
+  }, [query, session, dashboardPage, selectedAcademicYear, checkinsRefresh]);
 
   useEffect(() => {
     if (
       !session ||
+      !selectedAcademicYear ||
       adminOpen ||
       dashboardPage !== "group" ||
       selectedGroup === null
@@ -357,7 +426,7 @@ export default function App() {
       registrations: Registration[];
       has_more: boolean;
       checkin_summary: GroupCheckinSummary;
-    }>(`/api/registrations?group_number=${selectedGroup}&offset=0`)
+    }>(`/api/registrations?group_number=${selectedGroup}&offset=0&application_year=${selectedAcademicYear}`)
       .then(({ registrations, has_more: hasMore, checkin_summary: summary }) => {
         if (cancelled) return;
         setBrowseApplicants(registrations);
@@ -376,10 +445,10 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [session, adminOpen, dashboardPage, selectedGroup, checkinsRefresh]);
+  }, [session, adminOpen, dashboardPage, selectedGroup, selectedAcademicYear, checkinsRefresh]);
 
   useEffect(() => {
-    if (!session || adminOpen || dashboardPage !== "checked-in") return;
+    if (!session || !selectedAcademicYear || adminOpen || dashboardPage !== "checked-in") return;
     let cancelled = false;
     setCheckinsLoading(true);
     setCheckinsLoadingMore(false);
@@ -391,7 +460,7 @@ export default function App() {
         const { checkins, has_more: hasMore } = await apiRequest<{
           checkins: CheckinRow[];
           has_more: boolean;
-        }>(`/api/checkins?search=${encodeURIComponent(checkinSearch)}&offset=0`);
+        }>(`/api/checkins?search=${encodeURIComponent(checkinSearch)}&offset=0&application_year=${selectedAcademicYear}`);
         if (cancelled) return;
         setCheckinRows(checkins);
         setCheckinsHasMore(hasMore);
@@ -407,17 +476,19 @@ export default function App() {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [session, adminOpen, dashboardPage, checkinSearch, checkinsRefresh]);
+  }, [session, adminOpen, dashboardPage, checkinSearch, selectedAcademicYear, checkinsRefresh]);
 
   useEffect(() => {
-    if (!session || adminOpen || dashboardPage !== "overview") return;
+    if (!session || !selectedAcademicYear || adminOpen || dashboardPage !== "overview") return;
 
     let cancelled = false;
     setDashboardLoading(true);
     setDashboardSummary(null);
     setError("");
 
-    void apiRequest<{ summary: DashboardSummary }>("/api/dashboard")
+    void apiRequest<{ summary: DashboardSummary }>(
+      `/api/dashboard?application_year=${selectedAcademicYear}`,
+    )
       .then(({ summary }) => {
         if (!cancelled) setDashboardSummary(summary);
       })
@@ -432,7 +503,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [session, adminOpen, dashboardPage, checkinsRefresh]);
+  }, [session, adminOpen, dashboardPage, selectedAcademicYear, checkinsRefresh]);
 
   useEffect(() => {
     if (!cameraOpen) {
@@ -548,6 +619,180 @@ export default function App() {
     }
   }
 
+  async function reloadAcademicYears(preferredYear?: string) {
+    const { years, active_year: activeYear } = await apiRequest<{
+      years: AcademicYearSetting[];
+      active_year: string;
+    }>("/api/academic-years");
+    setAcademicYears(years);
+    setActiveAcademicYear(activeYear);
+    const nextYear = preferredYear && years.some(({ application_year }) => application_year === preferredYear)
+      ? preferredYear
+      : years.some(({ application_year }) => application_year === selectedAcademicYear)
+        ? selectedAcademicYear
+        : activeYear;
+    setSelectedAcademicYear(nextYear);
+    setNewAcademicYear(String(Number(activeYear) + 1));
+  }
+
+  async function saveAcademicYearSettings(
+    applicationYear: string,
+    schedule: ScheduleRound[],
+    activate: boolean,
+  ) {
+    setAcademicYearBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      await apiRequest<{ success: boolean }>("/api/academic-years", {
+        method: "PUT",
+        body: jsonBody({
+          application_year: applicationYear,
+          schedule,
+          activate,
+        }),
+      });
+      await reloadAcademicYears(applicationYear);
+      setCheckinsRefresh((current) => current + 1);
+      setNotice(
+        activate
+          ? `ตั้งปีการศึกษา พ.ศ. ${formatAcademicYear(applicationYear)} เป็นปีที่ใช้งานแล้ว`
+          : `บันทึกตารางเวลาปีการศึกษา พ.ศ. ${formatAcademicYear(applicationYear)} แล้ว`,
+      );
+    } catch (settingsError) {
+      setError(`บันทึกการตั้งค่าปีการศึกษาไม่สำเร็จ: ${settingsError instanceof Error ? settingsError.message : "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setAcademicYearBusy(false);
+    }
+  }
+
+  async function createAcademicYear() {
+    const applicationYear = newAcademicYear.trim();
+    if (!/^[1-9]\d{3}$/.test(applicationYear)) {
+      setError("กรุณากรอกปีการศึกษาเป็น ค.ศ. 4 หลัก");
+      return;
+    }
+    if (academicYears.some(({ application_year }) => application_year === applicationYear)) {
+      setError("ปีการศึกษานี้มีอยู่แล้ว เลือกปีจากรายการแล้วกดตั้งเป็นปีที่ใช้งานได้");
+      return;
+    }
+    const activeSchedule = academicYears.find(({ is_active }) => is_active)?.schedule
+      || DEFAULT_SCHEDULE.map((round) => ({ ...round }));
+    await saveAcademicYearSettings(applicationYear, activeSchedule, true);
+  }
+
+  function changeSelectedAcademicYear(applicationYear: string) {
+    if (applicationYear === selectedAcademicYear) return;
+    setSelectedAcademicYear(applicationYear);
+    setSelected(null);
+    setCheckin(null);
+    setPhoto(null);
+    setCheckinNote("");
+    setCameraOpen(false);
+    setQuery("");
+    setCandidates([]);
+    setCheckinSearch("");
+    checkinSearchRef.current = "";
+    setCheckinRows([]);
+    setCheckinsHasMore(false);
+    setError("");
+    setNotice("");
+    navigateDashboard("overview");
+  }
+
+  function updateScheduleDraft(
+    roundIndex: number,
+    field: keyof ScheduleRound,
+    value: string,
+  ) {
+    setScheduleDraft((current) => current.map((round, index) =>
+      index === roundIndex ? { ...round, [field]: value } : round,
+    ));
+  }
+
+  async function exportStudents() {
+    setStudentDataBusy("export");
+    setError("");
+    setNotice("");
+    try {
+      const response = await fetch(
+        `/api/registrations/export?application_year=${selectedAcademicYear}`,
+        {
+        credentials: "same-origin",
+        },
+      );
+      if (!response.ok) {
+        let message = `ส่งออกข้อมูลไม่สำเร็จ (HTTP ${response.status})`;
+        try {
+          const result = await response.json() as { error?: string };
+          if (result.error) message = result.error;
+        } catch {
+          // Keep the HTTP error when the response is not JSON.
+        }
+        throw new Error(message);
+      }
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `students-${selectedAcademicYear}.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setNotice("ส่งออกข้อมูลนักเรียนเป็นไฟล์ CSV แล้ว");
+    } catch (exportError) {
+      setError(`ส่งออกข้อมูลนักเรียนไม่สำเร็จ: ${exportError instanceof Error ? exportError.message : "เกิดข้อผิดพลาด"}`);
+    } finally {
+      setStudentDataBusy(null);
+    }
+  }
+
+  async function importStudents(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setStudentDataBusy("import");
+    setError("");
+    setNotice("");
+    let imported = 0;
+    try {
+      if (file.size > 5 * 1024 * 1024) {
+        throw new Error("ไฟล์มีขนาดเกิน 5 MB");
+      }
+      const rows = parseStudentCsv(await file.text());
+      if (rows.length === 0) throw new Error("ไม่พบข้อมูลนักเรียนในไฟล์");
+      if (!isActiveAcademicYear) {
+        throw new Error("เลือกนำเข้าได้เฉพาะปีการศึกษาที่กำลังใช้งาน");
+      }
+      if (rows.some(({ application_year }) => application_year !== selectedAcademicYear)) {
+        throw new Error(`ข้อมูลในไฟล์ต้องเป็นปี ค.ศ. ${selectedAcademicYear} เท่านั้น`);
+      }
+      if (!window.confirm(`ยืนยันนำเข้านักเรียน ${rows.length} รายการ? รายการที่มีรหัสรับสมัครซ้ำกับข้อมูลเดิมจะถูกอัปเดต`)) {
+        return;
+      }
+      for (let offset = 0; offset < rows.length; offset += 500) {
+        const batch: StudentImportRow[] = rows.slice(offset, offset + 500);
+        const result = await apiRequest<{ imported: number }>("/api/registrations/import", {
+          method: "POST",
+          body: jsonBody({ rows: batch }),
+        });
+        imported += result.imported;
+      }
+      setNotice(`นำเข้าข้อมูลนักเรียน ${imported} รายการเรียบร้อย`);
+      setCheckinsRefresh((current) => current + 1);
+    } catch (importError) {
+      const detail = importError instanceof Error ? importError.message : "เกิดข้อผิดพลาด";
+      setError(
+        imported > 0
+          ? `นำเข้าได้ ${imported} รายการก่อนพบข้อผิดพลาด: ${detail}`
+          : `นำเข้าข้อมูลนักเรียนไม่สำเร็จ: ${detail}`,
+      );
+    } finally {
+      setStudentDataBusy(null);
+    }
+  }
+
   async function loadMoreCheckins() {
     const search = checkinSearch;
     setCheckinsLoadingMore(true);
@@ -556,7 +801,7 @@ export default function App() {
         checkins: CheckinRow[];
         has_more: boolean;
       }>(
-        `/api/checkins?search=${encodeURIComponent(search)}&offset=${checkinRows.length}`,
+        `/api/checkins?search=${encodeURIComponent(search)}&offset=${checkinRows.length}&application_year=${selectedAcademicYear}`,
       );
       if (checkinSearchRef.current !== search) return;
       setCheckinRows((current) => [...current, ...checkins]);
@@ -583,7 +828,7 @@ export default function App() {
         registrations: Registration[];
         has_more: boolean;
       }>(
-        `/api/registrations?group_number=${groupNumber}&offset=${browseApplicants.length}`,
+        `/api/registrations?group_number=${groupNumber}&offset=${browseApplicants.length}&application_year=${selectedAcademicYear}`,
       );
       if (selectedGroupRef.current !== groupNumber) return;
       setBrowseApplicants((current) => [...current, ...registrations]);
@@ -610,8 +855,12 @@ export default function App() {
   }
 
   async function undoCheckin(checkin: CheckinRow) {
+    await cancelCheckin(checkin.checkin_id, checkin.application_code);
+  }
+
+  async function cancelCheckin(checkinId: string, applicationCode: string) {
     const reason = window.prompt(
-      `ยกเลิกการลงทะเบียน ${checkin.application_code} ใช่หรือไม่?\nโปรดระบุเหตุผล (อย่างน้อย 3 ตัวอักษร):`,
+      `ยกเลิกการลงทะเบียน ${applicationCode} ใช่หรือไม่?\nโปรดระบุเหตุผล (อย่างน้อย 3 ตัวอักษร):`,
     );
     if (reason === null) return;
     if (reason.trim().length < 3) {
@@ -619,14 +868,15 @@ export default function App() {
       return;
     }
 
-    setCheckinBusyId(checkin.checkin_id);
+    setCheckinBusyId(checkinId);
     setError("");
     try {
       await apiRequest<{ success: boolean }>("/api/checkins", {
         method: "PATCH",
-        body: jsonBody({ checkin_id: checkin.checkin_id, reason: reason.trim() }),
+        body: jsonBody({ checkin_id: checkinId, reason: reason.trim() }),
       });
-      setNotice(`ยกเลิกการลงทะเบียน ${checkin.application_code} แล้ว`);
+      setNotice(`ยกเลิกการลงทะเบียน ${applicationCode} แล้ว`);
+      if (selected?.application_code === applicationCode) setCheckin(null);
       setCheckinsRefresh((current) => current + 1);
       window.setTimeout(() => setNotice(""), 3000);
     } catch (undoError) {
@@ -801,6 +1051,8 @@ export default function App() {
       setCheckinNote("");
       setCameraOpen(false);
       setAdminOpen(false);
+      setStudentDataOpen(false);
+      setYearSettingsOpen(false);
       setError("");
     } catch (signOutError) {
       setError(`ออกจากระบบไม่สำเร็จ: ${signOutError instanceof Error ? signOutError.message : "เกิดข้อผิดพลาด"}`);
@@ -813,6 +1065,8 @@ export default function App() {
   ) {
     setDashboardPage(page);
     setAdminOpen(false);
+    setStudentDataOpen(false);
+    setYearSettingsOpen(false);
     setError("");
     if (page === "checkin") {
       setSelected(null);
@@ -845,7 +1099,7 @@ export default function App() {
       <main className="screen login-screen">
         <section className="card login-card">
           <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
-          <h1 className="system-title"><SystemTitle /></h1>
+          <h1 className="system-title"><SystemTitle applicationYear="" /></h1>
           <p className="muted">เข้าสู่ระบบสำหรับเจ้าหน้าที่</p>
           <form onSubmit={submitAuth} className="login-form">
             <label htmlFor="login-id">ID เจ้าหน้าที่</label>
@@ -881,7 +1135,7 @@ export default function App() {
     : 0;
   const selectedGroupSchedule = selectedGroup === null
     ? null
-    : getGroupSchedule(selectedGroup);
+    : getGroupSchedule(selectedGroup, selectedYearSchedule);
   const parentDashboardPage = dashboardPage === "group"
     ? groupReturnPage
     : dashboardPage === "applicant"
@@ -896,29 +1150,76 @@ export default function App() {
           <div className="brand">
             <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
             <div>
-              <h1 className="system-title"><SystemTitle /></h1>
+              <h1 className="system-title"><SystemTitle applicationYear={selectedAcademicYear} /></h1>
             </div>
           </div>
           <div className="staff-menu">
             <span className="staff-email">{session.display_name || session.email}</span>
-            {session.role === "admin" || isSuperadmin ? (
-              <button
-                className="button button-quiet"
-                onClick={() => {
-                  const opening = !adminOpen;
-                  setAdminOpen(opening);
-                  setError("");
-                  if (opening) void loadMembers();
-                }}
+            <label className="academic-year-picker">
+              <span>ปีที่ดู</span>
+              <select
+                aria-label="เลือกปีการศึกษา"
+                value={selectedAcademicYear}
+                onChange={(event) => changeSelectedAcademicYear(event.target.value)}
+                disabled={academicYearsLoading || academicYears.length === 0}
               >
-                {adminOpen ? "ปิดจัดการระบบ" : "จัดการระบบ"}
-              </button>
+                {academicYears.map(({ application_year, is_active }) => (
+                  <option value={application_year} key={application_year}>
+                    พ.ศ. {formatAcademicYear(application_year)}{is_active ? " · ปีปัจจุบัน" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {session.role === "admin" || isSuperadmin ? (
+              <>
+                <button
+                  className="button button-quiet"
+                  disabled={academicYearsLoading}
+                  onClick={() => {
+                    const opening = !yearSettingsOpen;
+                    setYearSettingsOpen(opening);
+                    setAdminOpen(false);
+                    setStudentDataOpen(false);
+                    setError("");
+                    setNotice("");
+                  }}
+                >
+                  {yearSettingsOpen ? "ปิดตั้งค่าปี" : "ตั้งค่าปี/รอบ"}
+                </button>
+                <button
+                  className="button button-quiet"
+                  disabled={academicYearsLoading}
+                  onClick={() => {
+                    const opening = !studentDataOpen;
+                    setStudentDataOpen(opening);
+                    setAdminOpen(false);
+                    setYearSettingsOpen(false);
+                    setError("");
+                    setNotice("");
+                  }}
+                >
+                  {studentDataOpen ? "ปิดจัดการข้อมูลนักเรียน" : "จัดการข้อมูลนักเรียน"}
+                </button>
+                <button
+                  className="button button-quiet"
+                  onClick={() => {
+                    const opening = !adminOpen;
+                    setAdminOpen(opening);
+                    setStudentDataOpen(false);
+                    setYearSettingsOpen(false);
+                    setError("");
+                    if (opening) void loadMembers();
+                  }}
+                >
+                  {adminOpen ? "ปิดจัดการระบบ" : "จัดการระบบ"}
+                </button>
+              </>
             ) : null}
             <button className="button button-quiet" onClick={() => void signOut()}>ออกจากระบบ</button>
           </div>
         </header>
 
-        {!adminOpen && (
+        {!adminOpen && !studentDataOpen && !yearSettingsOpen && (
           <nav className="dashboard-nav" aria-label="หน้าระบบเช็กชื่อ">
             <button
               className={`dashboard-tab ${parentDashboardPage === "overview" ? "dashboard-tab-active" : ""}`}
@@ -949,6 +1250,11 @@ export default function App() {
 
         {notice && <div className="success-toast" role="status"><Icon name="check" className="toast-icon" />{notice}</div>}
         {error && <div className="error-banner" role="alert"><Icon name="alert" className="toast-icon" />{error}</div>}
+        {academicYearsLoading && (
+          <div className="status status-pending" role="status" aria-live="polite">
+            กำลังโหลดข้อมูลปีการศึกษา…
+          </div>
+        )}
 
         {adminOpen ? (
           <section className="card members-card">
@@ -1081,6 +1387,10 @@ export default function App() {
                         >
                           ระงับบัญชี
                         </button>
+                      ) : !isActiveAcademicYear ? (
+                        <div className="status status-pending" role="status">
+                          <span>ข้อมูลปีการศึกษาย้อนหลัง แสดงผลได้แต่ไม่สามารถลงทะเบียนเพิ่ม</span>
+                        </div>
                       ) : (
                         <button
                           className="button button-primary"
@@ -1116,6 +1426,173 @@ export default function App() {
                 ))}
               </div>
             ) : null}
+          </section>
+        ) : studentDataOpen ? (
+          <section className="card members-card student-data-card">
+            <div className="members-heading">
+              <div>
+                <h2>จัดการข้อมูลนักเรียน</h2>
+                <p className="muted">
+                  นำเข้าหรือส่งออกเฉพาะรายชื่อนักเรียน ไม่รวมประวัติการลงทะเบียนและบัญชีผู้ใช้
+                </p>
+              </div>
+            </div>
+            <div className="student-data-actions">
+              <button
+                className="button button-primary"
+                type="button"
+                onClick={() => void exportStudents()}
+                disabled={studentDataBusy !== null || !selectedAcademicYear}
+              >
+                {studentDataBusy === "export" ? "กำลังส่งออก…" : "ส่งออก CSV"}
+              </button>
+              <button
+                className="button button-quiet"
+                type="button"
+                onClick={() => studentFileRef.current?.click()}
+                disabled={studentDataBusy !== null || !isActiveAcademicYear || !selectedAcademicYear}
+              >
+                {studentDataBusy === "import" ? "กำลังนำเข้า…" : "เลือกไฟล์ CSV เพื่อนำเข้า"}
+              </button>
+              <input
+                ref={studentFileRef}
+                className="visually-hidden"
+                type="file"
+                accept=".csv,text/csv"
+                aria-label="เลือกไฟล์ CSV ข้อมูลนักเรียน"
+                onChange={(event) => void importStudents(event)}
+              />
+            </div>
+            <ul className="student-data-notes">
+              <li>ไฟล์ CSV ต้องมีคอลัมน์: application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start และ slot_end</li>
+              <li>นำเข้าปี ค.ศ. {selectedAcademicYear} เท่านั้น; รหัสรับสมัครที่ตรงกับข้อมูลเดิมในปีเดียวกันจะถูกอัปเดต</li>
+              <li>ส่งออกข้อมูลได้ทุกปี แต่การนำเข้าทำได้เฉพาะปีปัจจุบัน ({isActiveAcademicYear ? "ปีนี้" : "เลือกปีปัจจุบันก่อน"})</li>
+              <li>รองรับไฟล์ CSV ขนาดไม่เกิน 5 MB; หากมีไฟล์ Excel ให้แปลงเป็น CSV ก่อนนำเข้า</li>
+            </ul>
+          </section>
+        ) : yearSettingsOpen ? (
+          <section className="card members-card year-settings-card">
+            <div className="members-heading">
+              <div>
+                <h2>ตั้งค่าปีการศึกษาและรอบเวลา</h2>
+                <p className="muted">
+                  ข้อมูลแต่ละปีจะแยกจากกัน ปีที่กำลังใช้งานคือ พ.ศ. {activeAcademicYear ? formatAcademicYear(activeAcademicYear) : "—"}
+                </p>
+              </div>
+            </div>
+            <form
+              className="year-create-form"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void createAcademicYear();
+              }}
+            >
+              <label>
+                เพิ่มปีการศึกษาใหม่ (ค.ศ.)
+                <input
+                  type="number"
+                  min="1900"
+                  max="9999"
+                  step="1"
+                  value={newAcademicYear}
+                  onChange={(event) => setNewAcademicYear(event.target.value)}
+                  required
+                />
+              </label>
+              <button
+                className="button button-primary"
+                type="submit"
+                disabled={academicYearBusy || academicYearsLoading}
+              >
+                {academicYearBusy ? "กำลังบันทึก…" : "เพิ่มและตั้งเป็นปีปัจจุบัน"}
+              </button>
+            </form>
+
+            {selectedAcademicYearSettings ? (
+              <>
+                <div className="year-settings-actions">
+                  <strong>
+                    ตารางเวลา พ.ศ. {formatAcademicYear(selectedAcademicYear)}
+                    {isActiveAcademicYear ? " · ปีปัจจุบัน" : " · ปีย้อนหลัง"}
+                  </strong>
+                  <div>
+                    <button
+                      className="button button-primary"
+                      type="button"
+                      onClick={() => void saveAcademicYearSettings(
+                        selectedAcademicYear,
+                        scheduleDraft,
+                        false,
+                      )}
+                      disabled={academicYearBusy || academicYearsLoading}
+                    >
+                      บันทึกตารางเวลา
+                    </button>
+                    {!isActiveAcademicYear && (
+                      <button
+                        className="button button-quiet"
+                        type="button"
+                        onClick={() => void saveAcademicYearSettings(
+                          selectedAcademicYear,
+                          scheduleDraft,
+                          true,
+                        )}
+                        disabled={academicYearBusy || academicYearsLoading}
+                      >
+                        ตั้งเป็นปีปัจจุบัน
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="year-round-list">
+                  {scheduleDraft.map((round, roundIndex) => (
+                    <fieldset className="year-round-card" key={roundIndex} disabled={academicYearBusy}>
+                      <legend>รอบที่ {roundIndex + 1} · กลุ่ม {roundIndex * 6 + 1}–{roundIndex * 6 + 6}</legend>
+                      <label>
+                        เริ่มลงทะเบียน
+                        <input
+                          type="time"
+                          value={round.registration_start}
+                          onChange={(event) => updateScheduleDraft(roundIndex, "registration_start", event.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        สิ้นสุดลงทะเบียน
+                        <input
+                          type="time"
+                          value={round.registration_end}
+                          onChange={(event) => updateScheduleDraft(roundIndex, "registration_end", event.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        เริ่มทำกิจกรรม
+                        <input
+                          type="time"
+                          value={round.activity_start}
+                          onChange={(event) => updateScheduleDraft(roundIndex, "activity_start", event.target.value)}
+                          required
+                        />
+                      </label>
+                      <label>
+                        สิ้นสุดกิจกรรม
+                        <input
+                          type="time"
+                          value={round.activity_end}
+                          onChange={(event) => updateScheduleDraft(roundIndex, "activity_end", event.target.value)}
+                          required
+                        />
+                      </label>
+                    </fieldset>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <div className="not-found">
+                <strong>ยังไม่มีข้อมูลปีการศึกษาให้ตั้งค่า</strong>
+              </div>
+            )}
           </section>
         ) : (
           <>
@@ -1202,7 +1679,7 @@ export default function App() {
                         group_number >= firstGroup &&
                         group_number < firstGroup + GROUPS_PER_ROUND,
                     );
-                    const schedule = getGroupSchedule(firstGroup);
+                    const schedule = getGroupSchedule(firstGroup, selectedYearSchedule);
 
                     return (
                       <section className="overview-round" key={firstGroup}>
@@ -1552,6 +2029,14 @@ export default function App() {
                   <span>เจ้าหน้าที่ {checkin.staff_label}</span>
                   {checkin.note && <span>หมายเหตุ: {checkin.note}</span>}
                 </div>
+                <button
+                  className="button button-danger applicant-cancel-checkin"
+                  type="button"
+                  onClick={() => void cancelCheckin(checkin.id, selected.application_code)}
+                  disabled={checkinBusyId !== null}
+                >
+                  {checkinBusyId === checkin.id ? "กำลังยกเลิก…" : "ยกเลิกการลงทะเบียน"}
+                </button>
               </div>
             ) : (
               <>

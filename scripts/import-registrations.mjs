@@ -110,6 +110,11 @@ async function main() {
     throw new Error("ไม่พบข้อมูลผู้สมัครใน worksheet");
   }
 
+  const applicationYears = new Set(rows.map(({ application_year }) => application_year));
+  if (applicationYears.size !== 1 || !/^[1-9]\d{3}$/.test(rows[0].application_year)) {
+    throw new Error("ไฟล์นำเข้าต้องมีปีการศึกษา ค.ศ. 4 หลักเพียงปีเดียว");
+  }
+
   if (dryRun) {
     console.log(`ตรวจสอบไฟล์ Excel เรียบร้อย: ${rows.length} รายการ`);
     return;
@@ -154,10 +159,33 @@ async function main() {
   const supabase = createClient(supabaseUrl, serviceRoleKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  for (let offset = 0; offset < rows.length; offset += 200) {
+  const applicationYear = rows[0].application_year;
+  const { data: yearSettings, error: settingsError } = await supabase
+    .from("academic_year_settings")
+    .select("schedule")
+    .eq("application_year", applicationYear)
+    .eq("is_active", true)
+    .single();
+  if (settingsError) {
+    throw new Error(`ไม่พบการตั้งค่าปีการศึกษาที่กำลังใช้งาน: ${settingsError.message}`);
+  }
+  const scheduledRows = rows.map((row) => {
+    const round = yearSettings.schedule[Math.floor((row.group_number - 1) / 6)];
+    const activityStart = round.activity_start;
+    const activityEnd = round.activity_end;
+    return {
+      ...row,
+      slot_text: `${activityStart.replace(":", ".")} - ${activityEnd.replace(":", ".")} น.`,
+      slot_start: activityStart,
+      slot_end: activityEnd,
+    };
+  });
+  for (let offset = 0; offset < scheduledRows.length; offset += 200) {
     const { error } = await supabase
       .from("registrations")
-      .upsert(rows.slice(offset, offset + 200), { onConflict: "application_code" });
+      .upsert(scheduledRows.slice(offset, offset + 200), {
+        onConflict: "application_year,application_code",
+      });
     if (error) {
       throw new Error(`นำเข้าข้อมูลไม่สำเร็จ: ${error.message}`);
     }
