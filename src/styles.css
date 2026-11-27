@@ -175,6 +175,33 @@ button {
   white-space: nowrap;
 }
 
+.academic-year-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: -8px 0 22px;
+  padding: 14px 18px;
+  border: 1px solid #e6d9ec;
+  border-radius: 14px;
+  background: linear-gradient(110deg, #f8f3fa, #fff);
+}
+
+.academic-year-description {
+  display: grid;
+  gap: 1px;
+}
+
+.academic-year-description strong {
+  color: #39343c;
+  font-size: 15px;
+}
+
+.academic-year-description span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .card {
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -1149,6 +1176,7 @@ button {
 .camera-panel,
 .photo-preview-wrap {
   overflow: hidden;
+  scroll-margin-top: 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #f1eee9;
@@ -1500,11 +1528,12 @@ button {
 
 .academic-year-picker {
   display: flex;
-  flex: 0 0 auto;
+  flex: 0 1 540px;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-end;
+  gap: 12px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1522,7 +1551,27 @@ button {
 }
 
 .academic-year-picker select {
-  max-width: 190px;
+  width: min(100%, 340px);
+  min-width: 0;
+  max-width: none;
+}
+
+@media (max-width: 780px) {
+  .academic-year-bar {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .academic-year-picker {
+    display: grid;
+    width: 100%;
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .academic-year-picker select {
+    width: 100%;
+  }
 }
 
 .year-create-form,
@@ -1794,14 +1843,12 @@ button {
   }
 
   .academic-year-picker {
-    grid-column: 1 / -1;
     display: grid;
     grid-template-columns: max-content minmax(0, 1fr);
   }
 
   .academic-year-picker select {
     width: 100%;
-    max-width: none;
   }
 
   .year-round-card {

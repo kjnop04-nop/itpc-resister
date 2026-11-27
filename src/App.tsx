@@ -255,6 +255,7 @@ export default function App() {
   const [clock, setClock] = useState(Date.now());
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
+  const cameraPanelRef = useRef<HTMLDivElement>(null);
   const checkinSearchRef = useRef(checkinSearch);
   const selectedGroupRef = useRef(selectedGroup);
   const studentFileRef = useRef<HTMLInputElement>(null);
@@ -514,6 +515,14 @@ export default function App() {
 
     let cancelled = false;
     let openedStream: MediaStream | null = null;
+    const scrollFrame = window.requestAnimationFrame(() => {
+      cameraPanelRef.current?.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+        block: "center",
+      });
+    });
 
     async function openCamera() {
       try {
@@ -548,6 +557,7 @@ export default function App() {
     void openCamera();
     return () => {
       cancelled = true;
+      window.cancelAnimationFrame(scrollFrame);
       openedStream?.getTracks().forEach((track) => track.stop());
     };
   }, [cameraOpen]);
@@ -1155,21 +1165,6 @@ export default function App() {
           </div>
           <div className="staff-menu">
             <span className="staff-email">{session.display_name || session.email}</span>
-            <label className="academic-year-picker">
-              <span>ปีที่ดู</span>
-              <select
-                aria-label="เลือกปีการศึกษา"
-                value={selectedAcademicYear}
-                onChange={(event) => changeSelectedAcademicYear(event.target.value)}
-                disabled={academicYearsLoading || academicYears.length === 0}
-              >
-                {academicYears.map(({ application_year, is_active }) => (
-                  <option value={application_year} key={application_year}>
-                    พ.ศ. {formatAcademicYear(application_year)}{is_active ? " · ปีปัจจุบัน" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
             {session.role === "admin" || isSuperadmin ? (
               <>
                 <button
@@ -1218,6 +1213,36 @@ export default function App() {
             <button className="button button-quiet" onClick={() => void signOut()}>ออกจากระบบ</button>
           </div>
         </header>
+
+        <section className="academic-year-bar" aria-label="เลือกปีการศึกษา">
+          <div className="academic-year-description">
+            <strong>ปีการศึกษา</strong>
+            <span>
+              {academicYearsLoading
+                ? "กำลังโหลดรายการปีการศึกษา…"
+                : !selectedAcademicYear
+                  ? "ยังไม่มีปีการศึกษาให้เลือก"
+                  : isActiveAcademicYear
+                    ? "กำลังดูปีปัจจุบัน"
+                    : "กำลังดูข้อมูลย้อนหลัง"}
+            </span>
+          </div>
+          <label className="academic-year-picker">
+            <span>เลือกปีที่ต้องการดู</span>
+            <select
+              aria-label="เลือกปีการศึกษาที่ต้องการดู"
+              value={selectedAcademicYear}
+              onChange={(event) => changeSelectedAcademicYear(event.target.value)}
+              disabled={academicYearsLoading || academicYears.length === 0}
+            >
+              {academicYears.map(({ application_year, is_active }) => (
+                <option value={application_year} key={application_year}>
+                  พ.ศ. {formatAcademicYear(application_year)}{is_active ? " · ปีปัจจุบัน" : " · ดูย้อนหลัง"}
+                </option>
+              ))}
+            </select>
+          </label>
+        </section>
 
         {!adminOpen && !studentDataOpen && !yearSettingsOpen && (
           <nav className="dashboard-nav" aria-label="หน้าระบบเช็กชื่อ">
@@ -2047,7 +2072,7 @@ export default function App() {
                   </div>
 
                   {cameraOpen ? (
-                    <div className="camera-panel">
+                    <div className="camera-panel" ref={cameraPanelRef}>
                       <video ref={videoRef} className="camera-preview" playsInline muted aria-label="ภาพจากกล้องหลัง" />
                       <div className="camera-actions">
                         <button className="button button-quiet" onClick={() => setCameraOpen(false)}>ยกเลิก</button>
