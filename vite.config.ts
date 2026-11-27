@@ -78,11 +78,13 @@ export default defineConfig(({ mode }) => {
       port: 3016,
       host: true,
       strictPort: true,
+      allowedHosts: true,
     },
     preview: {
       port: 3016,
       host: true,
       strictPort: true,
+      allowedHosts: true,
     },
     plugins: [react(), localApiPlugin()],
     test: {
