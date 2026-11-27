@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { currentBangkokMinutes, DEFAULT_SCHEDULE, formatSlotText, getGroupSchedule, isWithinSlot, type ScheduleRound } from "./lib/schedule";
-import { apiRequest, jsonBody } from "./lib/api";
+import { apiRequest, apiUrl, jsonBody } from "./lib/api";
 import { parseStudentCsv, type StudentImportRow } from "./lib/studentCsv";
 import { formatAcademicYear, parseBuddhistAcademicYear } from "./lib/academicYear";
 
@@ -740,7 +740,7 @@ export default function App() {
     setNotice("");
     try {
       const response = await fetch(
-        `/api/registrations/export?application_year=${selectedAcademicYear}`,
+        apiUrl(`/api/registrations/export?application_year=${selectedAcademicYear}`),
         {
         credentials: "same-origin",
         },
@@ -1122,7 +1122,7 @@ export default function App() {
     return (
       <main className="screen login-screen">
         <section className="card login-card">
-          <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
+          <img className="brand-logo" src={apiUrl("/CMUDS-ITPC_6.png")} alt="โลโก้ CMUDS-ITPC" />
           <h1 className="system-title"><SystemTitle applicationYear="" /></h1>
           <p className="muted">เข้าสู่ระบบสำหรับเจ้าหน้าที่</p>
           <form onSubmit={submitAuth} className="login-form">
@@ -1172,7 +1172,7 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar">
           <div className="brand">
-            <img className="brand-logo" src="/CMUDS-ITPC_6.png" alt="โลโก้ CMUDS-ITPC" />
+            <img className="brand-logo" src={apiUrl("/CMUDS-ITPC_6.png")} alt="โลโก้ CMUDS-ITPC" />
             <div>
               <h1 className="system-title"><SystemTitle applicationYear={selectedAcademicYear} /></h1>
             </div>

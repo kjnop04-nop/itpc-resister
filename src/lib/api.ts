@@ -2,11 +2,20 @@ type ApiError = {
   error?: string;
 };
 
+const baseUrl = (import.meta.env.BASE_URL || "/").replace(/\/$/, "");
+
+export function apiUrl(path: string): string {
+  if (path.startsWith("/")) {
+    return `${baseUrl}${path}`;
+  }
+  return path;
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(path, {
+  const response = await fetch(apiUrl(path), {
     ...options,
     credentials: "same-origin",
     headers: {
