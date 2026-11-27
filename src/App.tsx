@@ -255,7 +255,7 @@ export default function App() {
   const [clock, setClock] = useState(Date.now());
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
-  const cameraPanelRef = useRef<HTMLDivElement>(null);
+  const cameraDialogRef = useRef<HTMLDialogElement>(null);
   const checkinSearchRef = useRef(checkinSearch);
   const selectedGroupRef = useRef(selectedGroup);
   const studentFileRef = useRef<HTMLInputElement>(null);
@@ -507,6 +507,16 @@ export default function App() {
   }, [session, adminOpen, dashboardPage, selectedAcademicYear, checkinsRefresh]);
 
   useEffect(() => {
+    const dialog = cameraDialogRef.current;
+    if (!dialog) return;
+    if (cameraOpen && !dialog.open) {
+      dialog.showModal();
+    } else if (!cameraOpen && dialog.open) {
+      dialog.close();
+    }
+  }, [cameraOpen]);
+
+  useEffect(() => {
     if (!cameraOpen) {
       stream?.getTracks().forEach((track) => track.stop());
       setStream(null);
@@ -515,14 +525,6 @@ export default function App() {
 
     let cancelled = false;
     let openedStream: MediaStream | null = null;
-    const scrollFrame = window.requestAnimationFrame(() => {
-      cameraPanelRef.current?.scrollIntoView({
-        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-          ? "auto"
-          : "smooth",
-        block: "center",
-      });
-    });
 
     async function openCamera() {
       try {
@@ -557,7 +559,6 @@ export default function App() {
     void openCamera();
     return () => {
       cancelled = true;
-      window.cancelAnimationFrame(scrollFrame);
       openedStream?.getTracks().forEach((track) => track.stop());
     };
   }, [cameraOpen]);
@@ -2069,15 +2070,7 @@ export default function App() {
                     <p className="muted">ให้ผู้ปกครองถือบัตรที่มีรหัสให้เห็นในภาพ</p>
                   </div>
 
-                  {cameraOpen ? (
-                    <div className="camera-panel" ref={cameraPanelRef}>
-                      <video ref={videoRef} className="camera-preview" playsInline muted aria-label="ภาพจากกล้องหลัง" />
-                      <div className="camera-actions">
-                        <button className="button button-quiet" onClick={() => setCameraOpen(false)}>ยกเลิก</button>
-                        <button className="button button-primary" onClick={capturePhoto}>ถ่ายภาพ</button>
-                      </div>
-                    </div>
-                  ) : photo ? (
+                  {cameraOpen ? null : photo ? (
                     <div className="photo-preview-wrap">
                       <img className="photo-preview" src={photoUrl} alt="ภาพถ่ายคู่กับรหัส" />
                       <label className="checkin-note-field">
@@ -2119,6 +2112,46 @@ export default function App() {
         )}
           </>
         )}
+        <dialog
+          ref={cameraDialogRef}
+          className="camera-dialog"
+          aria-labelledby="camera-dialog-title"
+          onCancel={(event) => {
+            event.preventDefault();
+            setCameraOpen(false);
+          }}
+          onClose={() => setCameraOpen(false)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setCameraOpen(false);
+          }}
+        >
+          {cameraOpen && selected && (
+            <>
+              <header className="camera-dialog-heading">
+                <div>
+                  <h2 id="camera-dialog-title">ถ่ายรูปคู่กับรหัส {selected.application_code}</h2>
+                  <p>{selected.title}{selected.first_name} {selected.last_name}</p>
+                </div>
+                <button
+                  className="button button-quiet"
+                  type="button"
+                  onClick={() => setCameraOpen(false)}
+                  aria-label="ปิดกล้อง"
+                >
+                  ปิด
+                </button>
+              </header>
+              <div className="camera-panel">
+                <video ref={videoRef} className="camera-preview" playsInline muted aria-label="ภาพจากกล้องหลัง" />
+                <div className="camera-actions">
+                  <button className="button button-quiet" type="button" onClick={() => setCameraOpen(false)}>ยกเลิก</button>
+                  <button className="button button-primary" type="button" onClick={capturePhoto}>ถ่ายภาพ</button>
+                </div>
+              </div>
+            </>
+          )}
+        </dialog>
+
         {checkinPhoto && (
           <div
             className="photo-viewer-backdrop"

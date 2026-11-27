@@ -1176,10 +1176,58 @@ button {
 .camera-panel,
 .photo-preview-wrap {
   overflow: hidden;
-  scroll-margin-top: 20px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: #f1eee9;
+}
+
+.camera-dialog {
+  width: min(calc(100vw - 24px), 960px);
+  max-width: none;
+  max-height: 92vh;
+  max-height: 92dvh;
+  overflow: auto;
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #fff;
+  color: #2f2a32;
+  box-shadow: 0 20px 70px rgb(31 26 34 / 28%);
+}
+
+.camera-dialog::backdrop {
+  background: rgb(31 26 34 / 72%);
+}
+
+.camera-dialog-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.camera-dialog-heading h2,
+.camera-dialog-heading p {
+  margin: 0;
+}
+
+.camera-dialog-heading h2 {
+  color: var(--accent);
+  font-size: 19px;
+}
+
+.camera-dialog-heading p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.camera-dialog .camera-panel {
+  border: 0;
+  border-top: 1px solid var(--line);
+  border-radius: 0;
 }
 
 .camera-preview,
@@ -1200,6 +1248,8 @@ button {
 }
 
 .camera-actions {
+  position: sticky;
+  bottom: 0;
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
