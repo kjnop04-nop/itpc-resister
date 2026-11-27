@@ -1633,6 +1633,7 @@ button {
   .academic-year-picker {
     display: grid;
     width: 100%;
+    flex-basis: auto;
     grid-template-columns: max-content minmax(0, 1fr);
   }
 
