@@ -256,6 +256,7 @@ export default function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const captureCanvasRef = useRef<HTMLCanvasElement>(null);
   const cameraDialogRef = useRef<HTMLDialogElement>(null);
+  const saveCheckinButtonRef = useRef<HTMLButtonElement>(null);
   const checkinSearchRef = useRef(checkinSearch);
   const selectedGroupRef = useRef(selectedGroup);
   const studentFileRef = useRef<HTMLInputElement>(null);
@@ -275,6 +276,14 @@ export default function App() {
     const url = URL.createObjectURL(photo);
     setPhotoUrl(url);
     return () => URL.revokeObjectURL(url);
+  }, [photo]);
+
+  useEffect(() => {
+    if (!photo) return;
+    const frame = window.requestAnimationFrame(() => {
+      saveCheckinButtonRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [photo]);
 
   useEffect(() => {
@@ -2085,7 +2094,12 @@ export default function App() {
                       </label>
                       <div className="photo-actions">
                         <button className="button button-quiet" onClick={() => { setPhoto(null); setCameraOpen(true); }}>ถ่ายใหม่</button>
-                        <button className="button button-primary" onClick={() => void submitCheckin()} disabled={busy}>
+                        <button
+                          ref={saveCheckinButtonRef}
+                          className="button button-primary"
+                          onClick={() => void submitCheckin()}
+                          disabled={busy}
+                        >
                           {busy ? "กำลังบันทึก…" : "บันทึกการลงทะเบียน"}
                         </button>
                       </div>
