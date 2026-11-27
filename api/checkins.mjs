@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import {
-  getAdminClient,
   MAX_PHOTO_BYTES,
   readJson,
   sendJson,
@@ -16,8 +15,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async (staff) => {
-    const client = getAdminClient();
+  await withAuthenticatedStaff(request, response, async (staff, client) => {
     if (request.method === "GET") {
       const params = new URL(request.url, "http://localhost").searchParams;
       const photoCheckinId = params.get("photo_checkin_id");

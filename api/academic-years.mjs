@@ -1,4 +1,4 @@
-import { getAdminClient, readJson, sendJson, withAuthenticatedStaff } from "./_lib/server.mjs";
+import { readJson, sendJson, withAuthenticatedStaff } from "./_lib/server.mjs";
 
 const YEAR_PATTERN = /^[1-9][0-9]{3}$/;
 const SCHEDULE_FIELDS = [
@@ -51,8 +51,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async (staff) => {
-    const client = getAdminClient();
+  await withAuthenticatedStaff(request, response, async (staff, client) => {
     if (request.method === "GET") {
       const { data, error } = await client
         .from("academic_year_settings")

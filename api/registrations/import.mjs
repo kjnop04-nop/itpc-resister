@@ -1,4 +1,4 @@
-import { getAdminClient, readJson, sendJson, withAuthenticatedStaff } from "../_lib/server.mjs";
+import { readJson, sendJson, withAuthenticatedStaff } from "../_lib/server.mjs";
 
 const MAX_IMPORT_ROWS = 500;
 const YEAR_PATTERN = /^[1-9]\d{3}$/;
@@ -49,7 +49,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async (staff) => {
+  await withAuthenticatedStaff(request, response, async (staff, client) => {
     if (staff.role !== "admin" && staff.role !== "superadmin") {
       sendJson(response, 403, { error: "เฉพาะแอดมินเท่านั้นที่นำเข้าข้อมูลนักเรียนได้" });
       return;
@@ -72,7 +72,6 @@ export default async function handler(request, response) {
       sendJson(response, 400, { error: "ปีการศึกษา (ค.ศ.) ต้องเป็นตัวเลข 4 หลัก" });
       return;
     }
-    const client = getAdminClient();
     const { data: activeYear, error: activeYearError } = await client
       .from("academic_year_settings")
       .select("application_year, schedule")

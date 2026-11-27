@@ -47,14 +47,50 @@ export function readJson(request) {
   });
 }
 
-export function getAdminClient() {
+function getSupabaseConfig() {
   const url = process.env.SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !serviceRoleKey) {
-    throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be configured");
+  const anonKey = process.env.SUPABASE_ANON_KEY;
+  if (!url || !anonKey) {
+    throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY must be configured");
   }
-  return createClient(url, serviceRoleKey, {
+  return { url, anonKey };
+}
+
+export function createSupabaseAccessToken(staff) {
+  const secret = process.env.SUPABASE_JWT_SECRET;
+  if (!secret || secret.length < 32) {
+    throw new Error("SUPABASE_JWT_SECRET must contain at least 32 characters");
+  }
+  const now = Math.floor(Date.now() / 1000);
+  const encode = (value) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const header = encode({ alg: "HS256", typ: "JWT" });
+  const payload = encode({
+    aud: "authenticated",
+    exp: now + 5 * 60,
+    iat: now,
+    sub: staff.id,
+    role: "authenticated",
+    user_metadata: { display_name: staff.display_name || "" },
+    ...(staff.email ? { email: staff.email } : {}),
+  });
+  const message = `${header}.${payload}`;
+  const signature = createHmac("sha256", secret).update(message).digest("base64url");
+  return `${message}.${signature}`;
+}
+
+export function getAnonClient() {
+  const { url, anonKey } = getSupabaseConfig();
+  return createClient(url, anonKey, {
     auth: { autoRefreshToken: false, persistSession: false },
+  });
+}
+
+export function getStaffClient(staff) {
+  const { url, anonKey } = getSupabaseConfig();
+  const accessToken = createSupabaseAccessToken(staff);
+  return createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
   });
 }
 
@@ -145,7 +181,7 @@ export async function authenticatedStaff(request) {
   const session = verifySessionToken(token, secret);
   if (!session) return null;
 
-  const { data, error } = await getAdminClient()
+  const { data, error } = await getStaffClient({ id: session.id })
     .from("staff_accounts")
     .select("id, email, display_name, role, status")
     .eq("id", session.id)
@@ -170,7 +206,7 @@ function apiFailureMessage(error) {
     return "โครงสร้างตาราง Supabase ยังไม่ตรงกับแอป กรุณารัน migrations ล่าสุด";
   }
   if (code === "42501") {
-    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบ service-role key และสิทธิ์ฐานข้อมูล";
+    return "Supabase ปฏิเสธสิทธิ์เข้าถึง กรุณาตรวจสอบ JWT, anon key และ RLS policies";
   }
   if (process.env.NODE_ENV !== "production" && error instanceof Error) {
     return `เกิดข้อผิดพลาดในการเชื่อมต่อระบบ: ${error.message}`;
@@ -190,7 +226,7 @@ export async function withAuthenticatedStaff(request, response, action) {
       sendJson(response, 401, { error: "กรุณาเข้าสู่ระบบใหม่" });
       return;
     }
-    await action(staff);
+    await action(staff, getStaffClient(staff));
   } catch (error) {
     sendApiFailure(response, error, "Authenticated API request failed");
   }

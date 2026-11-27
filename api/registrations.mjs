@@ -1,4 +1,4 @@
-import { getAdminClient, sendJson, withAuthenticatedStaff } from "./_lib/server.mjs";
+import { sendJson, withAuthenticatedStaff } from "./_lib/server.mjs";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {
@@ -6,7 +6,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async () => {
+  await withAuthenticatedStaff(request, response, async (_staff, client) => {
     const params = new URL(request.url, "http://localhost").searchParams;
     const applicationYear = params.get("application_year") || "";
     if (!/^[1-9]\d{3}$/.test(applicationYear)) {
@@ -37,7 +37,6 @@ export default async function handler(request, response) {
       }
 
       const pageSize = 50;
-      const client = getAdminClient();
       let registrationQuery = client
         .from("registrations")
         .select("id, application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start, slot_end")
@@ -100,7 +99,7 @@ export default async function handler(request, response) {
       return;
     }
 
-    const { data, error } = await getAdminClient().rpc("search_registrations", {
+    const { data, error } = await client.rpc("search_registrations", {
       p_query: query,
       p_application_year: applicationYear,
       p_limit: 10,

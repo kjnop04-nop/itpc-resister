@@ -1,4 +1,4 @@
-import { getAdminClient, sendJson, withAuthenticatedStaff } from "./_lib/server.mjs";
+import { sendJson, withAuthenticatedStaff } from "./_lib/server.mjs";
 
 const GROUP_COUNT = 30;
 const PAGE_SIZE = 1000;
@@ -9,13 +9,12 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async () => {
+  await withAuthenticatedStaff(request, response, async (_staff, client) => {
     const applicationYear = new URL(request.url, "http://localhost").searchParams.get("application_year") || "";
     if (!/^[1-9]\d{3}$/.test(applicationYear)) {
       sendJson(response, 400, { error: "กรุณาเลือกปีการศึกษาให้ถูกต้อง" });
       return;
     }
-    const client = getAdminClient();
     const groups = Array.from({ length: GROUP_COUNT }, (_, index) => ({
       group_number: index + 1,
       total: 0,

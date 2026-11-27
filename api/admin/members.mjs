@@ -1,5 +1,4 @@
 import {
-  getAdminClient,
   readJson,
   sendJson,
   validUuid,
@@ -15,13 +14,12 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async (manager) => {
+  await withAuthenticatedStaff(request, response, async (manager, client) => {
     if (manager.role !== "admin" && manager.role !== "superadmin") {
       sendJson(response, 403, { error: "ไม่มีสิทธิ์จัดการระบบ" });
       return;
     }
 
-    const client = getAdminClient();
     if (request.method === "GET") {
       const { data, error } = await client
         .from("staff_accounts")

@@ -1,4 +1,4 @@
-import { getAdminClient, sendJson, withAuthenticatedStaff } from "../_lib/server.mjs";
+import { sendJson, withAuthenticatedStaff } from "../_lib/server.mjs";
 
 const PAGE_SIZE = 1000;
 const COLUMNS = [
@@ -23,7 +23,7 @@ export default async function handler(request, response) {
     return;
   }
 
-  await withAuthenticatedStaff(request, response, async (staff) => {
+  await withAuthenticatedStaff(request, response, async (staff, client) => {
     if (staff.role !== "admin" && staff.role !== "superadmin") {
       sendJson(response, 403, { error: "เฉพาะแอดมินเท่านั้นที่ส่งออกข้อมูลนักเรียนได้" });
       return;
@@ -35,7 +35,6 @@ export default async function handler(request, response) {
       return;
     }
 
-    const client = getAdminClient();
     const rows = [];
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await client

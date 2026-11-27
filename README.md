@@ -19,6 +19,7 @@
    - `supabase/migrations/20261127110000_allow_multiple_admins.sql`
    - `supabase/migrations/20261127120000_superadmin_member_updates.sql`
    - `supabase/migrations/20261127130000_fix_admin_role_assignment.sql`
+   - `supabase/migrations/20261127140000_anon_key_custom_jwt_rls.sql`
    migration `20261127110000_allow_multiple_admins.sql` อนุญาตให้แอดมินทั่วไปสร้างบัญชีแอดมินเพิ่มได้ โดยแอดมินยังจัดการบัญชีแอดมินคนอื่นไม่ได้
    migration `20261127120000_superadmin_member_updates.sql` ปรับฟังก์ชันเลื่อน/แก้สิทธิ์บัญชีให้แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่ได้
    migration `20261127130000_fix_admin_role_assignment.sql` แก้การตรวจสิทธิ์ตอนเลื่อนเจ้าหน้าที่เป็นแอดมิน
@@ -54,7 +55,7 @@
 
 3. ปิดการสมัครสมาชิกด้วยตนเองแล้ว ให้เพิ่มบัญชีผ่านเมนู “จัดการระบบ” เท่านั้น ตอนเพิ่มบัญชีต้องกำหนด ID และรหัสผ่าน (ห้ามเว้นว่าง แต่ไม่บังคับความยาวขั้นต่ำ) ส่วนอีเมลเป็นช่องไม่บังคับ ใช้ ID และรหัสผ่านเข้าสู่ระบบ บัญชีเดิมที่สร้างก่อน migration นี้ใช้ email เดิมเป็น ID ไปก่อน แอดมินใหญ่จัดการบัญชีได้ทุกระดับ ส่วนแอดมินทั่วไปสร้างบัญชีแอดมินหรือเจ้าหน้าที่ได้ และจัดการบัญชีเจ้าหน้าที่ได้ รหัสผ่านจะถูกแฮชก่อนบันทึก
 4. แดชบอร์ดมีหน้า “ภาพรวม”, “ค้นหา” และ “ผู้ที่ลงทะเบียนแล้ว” สลับหน้าได้จากเมนูด้านบน และระบบจำหน้าที่เลือกไว้ใน URL หน้า “ภาพรวม” แสดงยอดลงทะเบียนรวมและแบ่งกลุ่มเป็น 5 รอบ รอบละ 6 กลุ่ม ใช้สีประจำกลุ่มวนซ้ำตามตาราง พร้อมเวลาลงทะเบียนและเวลาทำกิจกรรม กดกลุ่มเพื่อเปิดหน้าแสดงรายชื่อเฉพาะกลุ่มได้ทันที หน้า “ค้นหา” แสดงช่องค้นหาและปุ่มเลือกกลุ่ม โดยไม่แสดงรายชื่อจนกว่าจะเลือกผลค้นหาหรือกลุ่ม รายชื่อกลุ่มและข้อมูลผู้สมัคร/การลงทะเบียนแสดงในหน้าแยกกัน พร้อมค้นหาด้วยรหัสบางส่วน ชื่อ หรือนามสกุล ส่วนหน้า “ผู้ที่ลงทะเบียนแล้ว” ค้นหารายการด้วยรหัสหรือชื่อได้ เจ้าหน้าที่ที่เข้าสู่ระบบสามารถยกเลิกการลงทะเบียนที่ผิด โดยต้องระบุเหตุผล ระบบเก็บประวัติการยกเลิกไว้และอนุญาตให้ลงทะเบียนผู้สมัครคนนั้นใหม่ได้
-5. สร้าง `.env.local` จาก `.env.example` และกำหนด `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` และ `SESSION_SECRET` ฝั่ง server เท่านั้น ห้ามใช้ prefix `VITE_` กับ secrets:
+5. สร้าง `.env.local` จาก `.env.example` และกำหนด `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` และ `SESSION_SECRET` ฝั่ง server เท่านั้น ห้ามใช้ prefix `VITE_` กับ secrets:
 
    ```powershell
    $bytes = New-Object byte[] 32
@@ -62,7 +63,8 @@
    [Convert]::ToBase64String($bytes)
    ```
 
-   นำผลลัพธ์ไปตั้งเป็น `SESSION_SECRET` (อย่างน้อย 32 ตัวอักษร) และใช้ service-role key เฉพาะใน environment ของ backend/Vercel ห้ามส่ง key นี้ไปยัง browser หรือ commit ลง source code
+   นำผลลัพธ์ไปตั้งเป็น `SESSION_SECRET` (อย่างน้อย 32 ตัวอักษร) ใช้ anon/public key จาก Project Settings > API สำหรับ Supabase client และกำหนด JWT secret แบบ HS256 ของโปรเจกต์เป็น `SUPABASE_JWT_SECRET` เพื่อให้ API ออก JWT อายุสั้นตาม session ที่ตรวจสอบแล้ว ห้ามใช้ prefix `VITE_` หรือส่ง JWT secret ไปยัง browser
+   migration ล่าสุดจะปิดการอ่าน/เขียนตารางโดย anon โดยตรง และกำหนด RLS สำหรับ JWT ของเจ้าหน้าที่ที่ API ออกให้ หลังรัน migration แล้ว API runtime ไม่ใช้ service-role key ส่วนสคริปต์นำเข้าจากไฟล์ Excel แบบ local ในหัวข้อด้านล่างยังต้องใช้ service-role key แยกต่างหาก
 6. ติดตั้งและเปิดแอป:
 
    ```powershell
@@ -75,8 +77,8 @@
 ### แก้ปัญหาเข้าสู่ระบบ
 
 - ถ้าขึ้นว่า ID หรือรหัสผ่านไม่ถูกต้อง บัญชีอาจยังไม่ได้ถูกนำเข้าจาก Supabase Authentication เดิม (รัน migration `20261125110000_staff_accounts_and_admin.sql`) หรือรหัสผ่านไม่ตรงกับบัญชี
-- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบสี่ตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
-- ถ้าแจ้ง environment variables ให้ตั้ง `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` และ `SESSION_SECRET` ใน environment ฝั่ง server (รวมถึง Vercel Project Settings > Environment Variables เมื่อนำขึ้น production) แล้ว redeploy
+- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบห้าตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
+- ถ้าแจ้ง environment variables ให้ตั้ง `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` และ `SESSION_SECRET` ใน environment ฝั่ง server (รวมถึง Vercel Project Settings > Environment Variables เมื่อนำขึ้น production) แล้ว redeploy
 - ข้อผิดพลาดอื่นให้ดู function logs ใน Vercel หรือ terminal ที่รัน `npm run dev`; รายละเอียดภายในจะไม่ถูกส่งกลับไปยังหน้าเว็บ
 
 ## นำเข้ารายชื่อจาก Excel

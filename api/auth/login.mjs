@@ -1,6 +1,6 @@
 import {
   createSessionToken,
-  getAdminClient,
+  getAnonClient,
   readJson,
   sendJson,
   sessionCookie,
@@ -18,14 +18,15 @@ function loginFailureMessage(error) {
     code === "42703" ||
     code === "42883"
   ) {
-    return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ทั้ง 9 ไฟล์ตามลำดับใน README.md";
+    return "ฐานข้อมูลบัญชียังตั้งค่าไม่ครบ กรุณารัน migrations ตามลำดับใน README.md";
   }
   if (
     message.includes("SUPABASE_URL") ||
-    message.includes("SUPABASE_SERVICE_ROLE_KEY") ||
+    message.includes("SUPABASE_ANON_KEY") ||
+    message.includes("SUPABASE_JWT_SECRET") ||
     message.includes("SESSION_SECRET")
   ) {
-    return "เซิร์ฟเวอร์ยังตั้งค่า environment variables ไม่ครบ กรุณาตรวจ SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY และ SESSION_SECRET";
+    return "เซิร์ฟเวอร์ยังตั้งค่า environment variables ไม่ครบ กรุณาตรวจ SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_JWT_SECRET และ SESSION_SECRET";
   }
   return "ระบบเข้าสู่ระบบขัดข้อง กรุณาตรวจสอบ Supabase/Vercel logs หรือลองใหม่ภายหลัง";
 }
@@ -51,12 +52,18 @@ export default async function handler(request, response) {
         ? body.email.trim().toLowerCase()
         : "";
     const password = typeof body?.password === "string" ? body.password : "";
-    if (!loginId || loginId.length > 254 || /\s/.test(loginId) || !password) {
+    if (
+      !loginId ||
+      loginId.length > 254 ||
+      /\s/.test(loginId) ||
+      !password ||
+      password.length > 1024
+    ) {
       sendJson(response, 400, { error: "กรุณากรอก ID และรหัสผ่านให้ครบถ้วน" });
       return;
     }
 
-    const client = getAdminClient();
+    const client = getAnonClient();
     const { data, error } = await client.rpc("verify_staff_login", {
       p_login_id: loginId,
       p_password: password,
@@ -76,12 +83,6 @@ export default async function handler(request, response) {
       sendJson(response, 403, { error: message });
       return;
     }
-
-    const { error: updateError } = await client
-      .from("staff_accounts")
-      .update({ last_login_at: new Date().toISOString() })
-      .eq("id", staff.id);
-    if (updateError) throw updateError;
 
     const secret = process.env.SESSION_SECRET;
     if (!secret || secret.length < 32) {
