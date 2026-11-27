@@ -10,6 +10,10 @@ const MAX_LENGTHS = {
   last_name: 100,
   slot_text: 80,
 };
+const OPTIONAL_MAX_LENGTHS = {
+  nickname: 100,
+  parent_phone: 32,
+};
 
 function timeInSeconds(value) {
   if (typeof value !== "string") return null;
@@ -26,6 +30,14 @@ function validateRow(row, index) {
   }
   for (const [field, maxLength] of Object.entries(MAX_LENGTHS)) {
     if (typeof row[field] !== "string" || !row[field].trim() || row[field].length > maxLength) {
+      return `แถว ${index + 1}: ข้อมูล ${field} ไม่ถูกต้อง`;
+    }
+  }
+  for (const [field, maxLength] of Object.entries(OPTIONAL_MAX_LENGTHS)) {
+    if (
+      Object.prototype.hasOwnProperty.call(row, field) &&
+      (typeof row[field] !== "string" || row[field].length > maxLength)
+    ) {
       return `แถว ${index + 1}: ข้อมูล ${field} ไม่ถูกต้อง`;
     }
   }
@@ -84,6 +96,8 @@ export default async function handler(request, response) {
     }
 
     const seenCodes = new Set();
+    const hasNickname = Object.prototype.hasOwnProperty.call(body.rows[0], "nickname");
+    const hasParentPhone = Object.prototype.hasOwnProperty.call(body.rows[0], "parent_phone");
     const rows = [];
     for (let index = 0; index < body.rows.length; index += 1) {
       const row = body.rows[index];
@@ -94,6 +108,13 @@ export default async function handler(request, response) {
       const validationError = validateRow(row, index);
       if (validationError) {
         sendJson(response, 400, { error: validationError });
+        return;
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(row, "nickname") !== hasNickname ||
+        Object.prototype.hasOwnProperty.call(row, "parent_phone") !== hasParentPhone
+      ) {
+        sendJson(response, 400, { error: `แถว ${index + 1}: คอลัมน์ชื่อเล่นและเบอร์ผู้ปกครองต้องมีครบทุกแถว` });
         return;
       }
       if (seenCodes.has(row.application_code)) {
@@ -114,6 +135,8 @@ export default async function handler(request, response) {
         slot_text: `${activityStart.replace(":", ".")} - ${activityEnd.replace(":", ".")} น.`,
         slot_start: activityStart,
         slot_end: activityEnd,
+        ...(hasNickname ? { nickname: row.nickname.trim() || null } : {}),
+        ...(hasParentPhone ? { parent_phone: row.parent_phone.trim() || null } : {}),
       });
     }
 

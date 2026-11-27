@@ -8,6 +8,8 @@ export type StudentImportRow = {
   slot_text: string;
   slot_start: string;
   slot_end: string;
+  nickname?: string;
+  parent_phone?: string;
 };
 
 const columns: (keyof StudentImportRow)[] = [
@@ -85,6 +87,8 @@ export function parseStudentCsv(text: string): StudentImportRow[] {
   const missing = columns.filter((column) => !header.includes(column));
   if (missing.length) throw new Error(`ไม่พบคอลัมน์ที่จำเป็น: ${missing.join(", ")}`);
   const positions = columns.map((column) => header.indexOf(column));
+  const nicknamePosition = header.indexOf("nickname");
+  const parentPhonePosition = header.indexOf("parent_phone");
   const seenCodes = new Set<string>();
 
   return records.map((record, rowIndex) => {
@@ -111,6 +115,12 @@ export function parseStudentCsv(text: string): StudentImportRow[] {
       slot_text: values[6],
       slot_start: values[7],
       slot_end: values[8],
+      ...(nicknamePosition === -1
+        ? {}
+        : { nickname: record[nicknamePosition].trim() }),
+      ...(parentPhonePosition === -1
+        ? {}
+        : { parent_phone: record[parentPhonePosition].trim() }),
     };
   });
 }

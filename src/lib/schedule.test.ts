@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_SCHEDULE, getGroupSchedule, isWithinSlot } from "./schedule";
+import { DEFAULT_SCHEDULE, formatSlotText, getGroupSchedule, isWithinSlot } from "./schedule";
+
+describe("formatSlotText", () => {
+  it("removes the trailing time marker, including corrupted punctuation", () => {
+    expect(formatSlotText("08.30 - 09.00 น.")).toBe("08.30 - 09.00");
+    expect(formatSlotText("08.30 - 09.00 ?.")).toBe("08.30 - 09.00");
+  });
+});
 
 describe("getGroupSchedule", () => {
   it("maps each group range to its registration and activity times", () => {

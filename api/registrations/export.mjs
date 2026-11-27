@@ -11,6 +11,8 @@ const COLUMNS = [
   "slot_text",
   "slot_start",
   "slot_end",
+  "nickname",
+  "parent_phone",
 ];
 
 function csvValue(value) {

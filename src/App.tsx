@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { currentBangkokMinutes, DEFAULT_SCHEDULE, getGroupSchedule, isWithinSlot, type ScheduleRound } from "./lib/schedule";
+import { currentBangkokMinutes, DEFAULT_SCHEDULE, formatSlotText, getGroupSchedule, isWithinSlot, type ScheduleRound } from "./lib/schedule";
 import { apiRequest, jsonBody } from "./lib/api";
 import { parseStudentCsv, type StudentImportRow } from "./lib/studentCsv";
-import { formatAcademicYear } from "./lib/academicYear";
+import { formatAcademicYear, parseBuddhistAcademicYear } from "./lib/academicYear";
 
 type StaffSession = {
   id: string;
@@ -29,6 +29,8 @@ type Registration = {
   title: string;
   first_name: string;
   last_name: string;
+  nickname: string | null;
+  parent_phone: string | null;
   group_number: number;
   slot_text: string;
   slot_start: string;
@@ -50,6 +52,8 @@ type CheckinRow = {
   title: string;
   first_name: string;
   last_name: string;
+  nickname: string | null;
+  parent_phone: string | null;
   group_number: number;
   slot_text: string;
   checked_in_at: string;
@@ -206,7 +210,7 @@ export default function App() {
   const [academicYearsLoading, setAcademicYearsLoading] = useState(false);
   const [activeAcademicYear, setActiveAcademicYear] = useState("");
   const [selectedAcademicYear, setSelectedAcademicYear] = useState("");
-  const [newAcademicYear, setNewAcademicYear] = useState("");
+  const [newBuddhistYear, setNewBuddhistYear] = useState("");
   const [scheduleDraft, setScheduleDraft] = useState<ScheduleRound[]>(
     DEFAULT_SCHEDULE.map((round) => ({ ...round })),
   );
@@ -320,7 +324,7 @@ export default function App() {
             ? current
             : activeYear,
         );
-        setNewAcademicYear(String(Number(activeYear) + 1));
+        setNewBuddhistYear(formatAcademicYear(String(Number(activeYear) + 1)));
       })
       .catch((yearError) => {
         if (!cancelled) {
@@ -652,7 +656,7 @@ export default function App() {
         ? selectedAcademicYear
         : activeYear;
     setSelectedAcademicYear(nextYear);
-    setNewAcademicYear(String(Number(activeYear) + 1));
+    setNewBuddhistYear(formatAcademicYear(String(Number(activeYear) + 1)));
   }
 
   async function saveAcademicYearSettings(
@@ -687,9 +691,9 @@ export default function App() {
   }
 
   async function createAcademicYear() {
-    const applicationYear = newAcademicYear.trim();
-    if (!/^[1-9]\d{3}$/.test(applicationYear)) {
-      setError("กรุณากรอกปีการศึกษาเป็น ค.ศ. 4 หลัก");
+    const applicationYear = parseBuddhistAcademicYear(newBuddhistYear.trim());
+    if (!applicationYear) {
+      setError("กรุณากรอกปีการศึกษาเป็น พ.ศ. 4 หลัก เช่น 2571");
       return;
     }
     if (academicYears.some(({ application_year }) => application_year === applicationYear)) {
@@ -1497,7 +1501,7 @@ export default function App() {
               />
             </div>
             <ul className="student-data-notes">
-              <li>ไฟล์ CSV ต้องมีคอลัมน์: application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start และ slot_end</li>
+              <li>ไฟล์ CSV ต้องมีคอลัมน์: application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start และ slot_end; nickname และ parent_phone เป็นคอลัมน์เสริม</li>
               <li>นำเข้าปี ค.ศ. {selectedAcademicYear} เท่านั้น; รหัสรับสมัครที่ตรงกับข้อมูลเดิมในปีเดียวกันจะถูกอัปเดต</li>
               <li>ส่งออกข้อมูลได้ทุกปี แต่การนำเข้าทำได้เฉพาะปีปัจจุบัน ({isActiveAcademicYear ? "ปีนี้" : "เลือกปีปัจจุบันก่อน"})</li>
               <li>รองรับไฟล์ CSV ขนาดไม่เกิน 5 MB; หากมีไฟล์ Excel ให้แปลงเป็น CSV ก่อนนำเข้า</li>
@@ -1521,14 +1525,15 @@ export default function App() {
               }}
             >
               <label>
-                เพิ่มปีการศึกษาใหม่ (ค.ศ.)
+                เพิ่มปีการศึกษาใหม่ (พ.ศ.)
                 <input
                   type="number"
-                  min="1900"
+                  min="2443"
                   max="9999"
                   step="1"
-                  value={newAcademicYear}
-                  onChange={(event) => setNewAcademicYear(event.target.value)}
+                  placeholder="เช่น 2571"
+                  value={newBuddhistYear}
+                  onChange={(event) => setNewBuddhistYear(event.target.value)}
                   required
                 />
               </label>
@@ -1762,15 +1767,15 @@ export default function App() {
               <div className="section-heading">
                 <div>
                   <h2>ค้นหาผู้สมัคร</h2>
-                  <p className="muted">ค้นหาด้วยรหัส ชื่อ หรือนามสกุล</p>
+                  <p className="muted">ค้นหาด้วยรหัส ชื่อ นามสกุล ชื่อเล่น หรือเบอร์ผู้ปกครอง</p>
                 </div>
               </div>
               <div className="search-control">
                 <span className="search-icon"><Icon name="search" /></span>
                 <input
-                  aria-label="ค้นหาด้วยรหัส ชื่อ หรือนามสกุล"
+                  aria-label="ค้นหาด้วยรหัส ชื่อ นามสกุล ชื่อเล่น หรือเบอร์ผู้ปกครอง"
                   autoComplete="off"
-                  placeholder="พิมพ์รหัส ชื่อ หรือนามสกุล"
+                  placeholder="พิมพ์รหัส ชื่อ ชื่อเล่น หรือเบอร์ผู้ปกครอง"
                   value={query}
                   onChange={(event) => {
                     setQuery(event.target.value);
@@ -1788,7 +1793,10 @@ export default function App() {
                       onClick={() => void chooseRegistration(candidate, "checkin")}
                     >
                       <span className="candidate-code">{candidate.application_code}</span>
-                      <span className="candidate-name">{candidate.title}{candidate.first_name} {candidate.last_name}</span>
+                      <span className="candidate-name">
+                        {candidate.title}{candidate.first_name} {candidate.last_name}
+                        {candidate.nickname && ` (${candidate.nickname})`}
+                      </span>
                       <span className="candidate-group">กลุ่ม {candidate.group_number}</span>
                       <span className="candidate-arrow"><Icon name="chevron-right" /></span>
                     </button>
@@ -1906,13 +1914,14 @@ export default function App() {
                           <span className="candidate-code">{applicant.application_code}</span>
                           <span className="applicant-name">
                             {applicant.title}{applicant.first_name} {applicant.last_name}
+                            {applicant.nickname && ` (${applicant.nickname})`}
                           </span>
                           {applicant.checked_in && (
                             <span className="applicant-checkin-status applicant-checkin-done">
                               ลงทะเบียนแล้ว
                             </span>
                           )}
-                          <span className="applicant-slot">รอบ {applicant.slot_text}</span>
+                          <span className="applicant-slot">รอบ {formatSlotText(applicant.slot_text)}</span>
                           <span className="candidate-arrow"><Icon name="chevron-right" /></span>
                         </button>
                       ))}
@@ -1953,9 +1962,9 @@ export default function App() {
           <div className="search-control checked-in-search">
             <span className="search-icon"><Icon name="search" /></span>
             <input
-              aria-label="ค้นหารายการลงทะเบียนด้วยรหัสหรือชื่อ"
+              aria-label="ค้นหารายการลงทะเบียนด้วยรหัส ชื่อเล่น หรือเบอร์ผู้ปกครอง"
               autoComplete="off"
-              placeholder="ค้นหาด้วยรหัสหรือชื่อผู้สมัคร"
+              placeholder="ค้นหาด้วยรหัส ชื่อ ชื่อเล่น หรือเบอร์ผู้ปกครอง"
               value={checkinSearch}
               onChange={(event) => {
                 checkinSearchRef.current = event.target.value;
@@ -1976,8 +1985,14 @@ export default function App() {
                 <article className="checked-in-row" key={row.checkin_id}>
                   <div className="checked-in-person">
                     <strong className="candidate-code">{row.application_code}</strong>
-                    <span className="checked-in-name">{row.title}{row.first_name} {row.last_name}</span>
-                    <span className="candidate-group">กลุ่ม {row.group_number} · รอบ {row.slot_text}</span>
+                    <span className="checked-in-name">
+                      {row.title}{row.first_name} {row.last_name}
+                      {row.nickname && ` (${row.nickname})`}
+                    </span>
+                    {row.parent_phone && (
+                      <span className="checked-in-meta">เบอร์ผู้ปกครอง: {row.parent_phone}</span>
+                    )}
+                    <span className="candidate-group">กลุ่ม {row.group_number} · รอบ {formatSlotText(row.slot_text)}</span>
                     <span className="checked-in-meta">
                       {formatCheckinTime(row.checked_in_at)} · ลงทะเบียนโดย {row.staff_label}
                     </span>
@@ -2036,11 +2051,17 @@ export default function App() {
               </button>
               <div className="registration-details">
                 <div className="registration-code">{selected.application_code}</div>
-                <div className="registration-name">{selected.title}{selected.first_name} {selected.last_name}</div>
+                <div className="registration-name">
+                  {selected.title}{selected.first_name}
+                  {selected.nickname && ` (${selected.nickname})`} {selected.last_name}
+                </div>
+                {selected.parent_phone && (
+                  <div className="registration-session">เบอร์ผู้ปกครอง: {selected.parent_phone}</div>
+                )}
                 <div className="registration-session">
                   กลุ่ม {selected.group_number}
                   <span className="session-divider">|</span>
-                  รอบ {selected.slot_text}
+                  รอบ {formatSlotText(selected.slot_text)}
                 </div>
               </div>
             </div>
@@ -2116,7 +2137,7 @@ export default function App() {
                   <span className="status-icon"><Icon name={onTime ? "check" : "alert"} /></span>
                   <div>
                     <strong>{onTime ? "มาถูกรอบ" : "มานอกรอบ"}</strong>
-                    <span>{onTime ? "ยังไม่ลงทะเบียน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${selected.slot_text} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
+                    <span>{onTime ? "ยังไม่ลงทะเบียน สามารถดำเนินการต่อได้" : `รอบจริงคือ ${formatSlotText(selected.slot_text)} — แจ้งผู้ปกครองก่อนดำเนินการต่อ`}</span>
                   </div>
                 </div>
               </>

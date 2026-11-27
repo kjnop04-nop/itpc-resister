@@ -20,6 +20,8 @@
    - `supabase/migrations/20261127120000_superadmin_member_updates.sql`
    - `supabase/migrations/20261127130000_fix_admin_role_assignment.sql`
    - `supabase/migrations/20261127140000_anon_key_custom_jwt_rls.sql`
+   - `supabase/migrations/20261127150000_allow_anon_role_full_access.sql`
+   - `supabase/migrations/20261127160000_student_nickname_parent_phone.sql`
    migration `20261127110000_allow_multiple_admins.sql` อนุญาตให้แอดมินทั่วไปสร้างบัญชีแอดมินเพิ่มได้ โดยแอดมินยังจัดการบัญชีแอดมินคนอื่นไม่ได้
    migration `20261127120000_superadmin_member_updates.sql` ปรับฟังก์ชันเลื่อน/แก้สิทธิ์บัญชีให้แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่ได้
    migration `20261127130000_fix_admin_role_assignment.sql` แก้การตรวจสิทธิ์ตอนเลื่อนเจ้าหน้าที่เป็นแอดมิน
@@ -77,7 +79,7 @@
 ### แก้ปัญหาเข้าสู่ระบบ
 
 - ถ้าขึ้นว่า ID หรือรหัสผ่านไม่ถูกต้อง บัญชีอาจยังไม่ได้ถูกนำเข้าจาก Supabase Authentication เดิม (รัน migration `20261125110000_staff_accounts_and_admin.sql`) หรือรหัสผ่านไม่ตรงกับบัญชี
-- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบห้าตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
+- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบเจ็ดตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
 - ถ้าแจ้ง environment variables ให้ตั้ง `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` และ `SESSION_SECRET` ใน environment ฝั่ง server (รวมถึง Vercel Project Settings > Environment Variables เมื่อนำขึ้น production) แล้ว redeploy
 - ข้อผิดพลาดอื่นให้ดู function logs ใน Vercel หรือ terminal ที่รัน `npm run dev`; รายละเอียดภายในจะไม่ถูกส่งกลับไปยังหน้าเว็บ
 
@@ -91,7 +93,9 @@ npm.cmd run import:registrations -- --export-csv "C:\path\to\registration.xlsx"
 
 ระบบจะสร้างไฟล์ `_supabase.csv` ข้างไฟล์ต้นฉบับโดยไม่แก้หรือลบต้นฉบับ จากนั้นเปิด Supabase Dashboard → **Table Editor** → `registrations` → **Import data from CSV** แล้วเลือก CSV ที่สร้าง
 
-แอดมินสามารถจัดการข้อมูลนักเรียนจากปุ่ม **จัดการข้อมูลนักเรียน** ในหน้าเว็บ เพื่อส่งออกรายชื่อนักเรียนเป็น CSV หรือเลือก CSV เพื่อนำเข้าได้ การนำเข้าจะเพิ่มรายการใหม่และอัปเดตรายการเดิมที่มี `application_code` ตรงกัน โดยไม่แก้ประวัติการลงทะเบียน ไฟล์ต้องมีคอลัมน์ `application_code`, `application_year`, `title`, `first_name`, `last_name`, `group_number`, `slot_text`, `slot_start` และ `slot_end`; รับไฟล์ CSV ไม่เกิน 5 MB และไม่รวมข้อมูลเช็กอินหรือบัญชีผู้ใช้
+ไฟล์ Excel ที่มีคอลัมน์ `ชื่อเล่น` และ `เบอร์ผู้ปกครอง` จะส่งออกเป็นคอลัมน์ `nickname` และ `parent_phone` ใน CSV ด้วย โดยเบอร์โทรเก็บเป็นข้อความเพื่อรักษาเลขศูนย์นำหน้า
+
+แอดมินสามารถจัดการข้อมูลนักเรียนจากปุ่ม **จัดการข้อมูลนักเรียน** ในหน้าเว็บ เพื่อส่งออกรายชื่อนักเรียนเป็น CSV หรือเลือก CSV เพื่อนำเข้าได้ การนำเข้าจะเพิ่มรายการใหม่และอัปเดตรายการเดิมที่มี `application_code` ตรงกัน โดยไม่แก้ประวัติการลงทะเบียน ไฟล์ต้องมีคอลัมน์ `application_code`, `application_year`, `title`, `first_name`, `last_name`, `group_number`, `slot_text`, `slot_start` และ `slot_end`; คอลัมน์ `nickname` และ `parent_phone` เป็นตัวเลือก หากไม่มีคอลัมน์เหล่านี้จะไม่ลบข้อมูลเดิม รับไฟล์ CSV ไม่เกิน 5 MB และไม่รวมข้อมูลเช็กอินหรือบัญชีผู้ใช้
 
 ตรวจสอบไฟล์โดยไม่สร้าง CSV ได้ด้วย:
 

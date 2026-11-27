@@ -39,7 +39,7 @@ export default async function handler(request, response) {
       const pageSize = 50;
       let registrationQuery = client
         .from("registrations")
-        .select("id, application_code, application_year, title, first_name, last_name, group_number, slot_text, slot_start, slot_end")
+        .select("id, application_code, application_year, title, first_name, last_name, nickname, parent_phone, group_number, slot_text, slot_start, slot_end")
         .order("group_number", { ascending: true })
         .order("application_code", { ascending: true });
       if (groupNumber !== null) {

@@ -22,6 +22,10 @@ function displayTime(value: string) {
   return value.replace(":", ".");
 }
 
+export function formatSlotText(value: string): string {
+  return value.replace(/\s*(?:น|\?)\.\s*$/, "");
+}
+
 export function getGroupSchedule(
   groupNumber: number,
   schedules: readonly ScheduleRound[] = DEFAULT_SCHEDULE,

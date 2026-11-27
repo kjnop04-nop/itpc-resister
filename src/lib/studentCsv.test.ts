@@ -23,6 +23,15 @@ describe("parseStudentCsv", () => {
     }]);
   });
 
+  it("parses nickname and parent phone as optional text columns", () => {
+    const result = parseStudentCsv(
+      `${headers},nickname,parent_phone\nAB001,2027,เด็กชาย,สมชาย,ทดสอบ,3,เวลา,09:00,09:30,น้องซัน,"0812345678"`,
+    );
+
+    expect(result[0].nickname).toBe("น้องซัน");
+    expect(result[0].parent_phone).toBe("0812345678");
+  });
+
   it("reports missing columns and malformed rows", () => {
     expect(() => parseStudentCsv("application_code,first_name\nA1,สมชาย")).toThrow(
       "ไม่พบคอลัมน์ที่จำเป็น",

@@ -5,3 +5,11 @@ export function formatAcademicYear(applicationYear: string): string {
   }
   return String(year + 543);
 }
+
+export function parseBuddhistAcademicYear(buddhistYear: string): string | null {
+  if (!/^[1-9]\d{3}$/.test(buddhistYear)) return null;
+  const applicationYear = Number(buddhistYear) - 543;
+  return applicationYear >= 1900 && applicationYear <= 9999
+    ? String(applicationYear)
+    : null;
+}

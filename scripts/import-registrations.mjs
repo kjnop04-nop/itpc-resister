@@ -12,7 +12,6 @@ const requiredColumns = [
   "กลุ่มนักเรียน (กิจกรรม)",
   "เวลากลุ่มนักเรียน (กิจกรรม)",
 ];
-
 function parseSlot(value, rowNumber) {
   const match = value.match(/(\d{1,2})[.:](\d{2})\s*-\s*(\d{1,2})[.:](\d{2})/);
   if (!match) {
@@ -67,6 +66,8 @@ async function main() {
   if (missingColumns.length) {
     throw new Error(`ไม่พบคอลัมน์ที่จำเป็น: ${missingColumns.join(", ")}`);
   }
+  const hasNickname = headers.includes("ชื่อเล่น");
+  const hasParentPhone = headers.includes("เบอร์ผู้ปกครอง");
 
   const rows = [];
   const seenCodes = new Set();
@@ -92,6 +93,12 @@ async function main() {
     }
     const slotText = requiredValue(source, "เวลากลุ่มนักเรียน (กิจกรรม)", rowNumber);
     const slot = parseSlot(slotText, rowNumber);
+    if (hasNickname && source["ชื่อเล่น"].length > 100) {
+      throw new Error(`แถว ${rowNumber}: ชื่อเล่นยาวเกิน 100 ตัวอักษร`);
+    }
+    if (hasParentPhone && source["เบอร์ผู้ปกครอง"].length > 32) {
+      throw new Error(`แถว ${rowNumber}: เบอร์ผู้ปกครองยาวเกิน 32 ตัวอักษร`);
+    }
 
     rows.push({
       application_code: applicationCode,
@@ -103,6 +110,8 @@ async function main() {
       slot_text: slotText,
       slot_start: slot.start,
       slot_end: slot.end,
+      ...(hasNickname ? { nickname: source["ชื่อเล่น"] } : {}),
+      ...(hasParentPhone ? { parent_phone: source["เบอร์ผู้ปกครอง"] } : {}),
     });
   });
 
@@ -138,6 +147,8 @@ async function main() {
       "slot_text",
       "slot_start",
       "slot_end",
+      ...(hasNickname ? ["nickname"] : []),
+      ...(hasParentPhone ? ["parent_phone"] : []),
     ];
     const csvValue = (value) => `"${String(value).replaceAll('"', '""')}"`;
     const csv = [
