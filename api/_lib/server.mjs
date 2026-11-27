@@ -99,11 +99,15 @@ export function getAnonClient() {
 
 export function getStaffClient(staff) {
   const { url, anonKey } = getSupabaseConfig();
-  const accessToken = createSupabaseAccessToken(staff);
-  return createClient(url, anonKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-    global: { headers: { Authorization: `Bearer ${accessToken}` } },
-  });
+  const secret = process.env.SUPABASE_JWT_SECRET;
+  if (secret && secret.length >= 32 && staff) {
+    const accessToken = createSupabaseAccessToken(staff);
+    return createClient(url, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+      global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    });
+  }
+  return getAnonClient();
 }
 
 function signPayload(payload, secret) {
@@ -157,8 +161,11 @@ function readCookie(request, name) {
 }
 
 function secureCookie(request) {
-  return process.env.NODE_ENV === "production" ||
-    request.headers["x-forwarded-proto"] === "https";
+  const forwardedProto = request.headers["x-forwarded-proto"];
+  if (typeof forwardedProto === "string") {
+    return forwardedProto.split(",")[0].trim().toLowerCase() === "https";
+  }
+  return Boolean(request.socket?.encrypted);
 }
 
 export function sessionCookie(request, token) {
@@ -167,7 +174,7 @@ export function sessionCookie(request, token) {
     "Path=/",
     `Max-Age=${SESSION_TTL_SECONDS}`,
     "HttpOnly",
-    "SameSite=Strict",
+    "SameSite=Lax",
     ...(secureCookie(request) ? ["Secure"] : []),
   ].join("; ");
 }
@@ -178,7 +185,7 @@ export function clearSessionCookie(request) {
     "Path=/",
     "Max-Age=0",
     "HttpOnly",
-    "SameSite=Strict",
+    "SameSite=Lax",
     ...(secureCookie(request) ? ["Secure"] : []),
   ].join("; ");
 }

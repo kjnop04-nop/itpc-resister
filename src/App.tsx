@@ -742,7 +742,7 @@ export default function App() {
       const response = await fetch(
         apiUrl(`/api/registrations/export?application_year=${selectedAcademicYear}`),
         {
-        credentials: "same-origin",
+        credentials: "include",
         },
       );
       if (!response.ok) {

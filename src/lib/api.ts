@@ -17,7 +17,7 @@ export async function apiRequest<T>(
 ): Promise<T> {
   const response = await fetch(apiUrl(path), {
     ...options,
-    credentials: "same-origin",
+    credentials: "include",
     headers: {
       ...(options.body ? { "Content-Type": "application/json" } : {}),
       ...options.headers,

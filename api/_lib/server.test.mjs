@@ -69,7 +69,8 @@ describe("createSupabaseAccessToken", () => {
     const staff = { id: "dd6c94a7-6a5e-47e3-aada-ff672845941e" };
     const client = getStaffClient(staff);
 
-    expect(client.rest.headers.Authorization).toBe(
+    const authHeader = client.rest.headers.get?.("Authorization") ?? client.rest.headers.Authorization;
+    expect(authHeader).toBe(
       `Bearer ${createSupabaseAccessToken(staff)}`,
     );
   });
