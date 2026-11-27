@@ -37,7 +37,10 @@ function localApiPlugin(): Plugin {
         response: ServerResponse,
         next: (error?: Error) => void,
       ) => {
-        const path = new URL(request.url || "/", "http://localhost").pathname;
+        let path = new URL(request.url || "/", "http://localhost").pathname;
+        if (path.startsWith("/itpc-register")) {
+          path = path.slice("/itpc-register".length);
+        }
         const handler = apiRoutes.get(path);
         if (!handler) {
           next();
@@ -63,6 +66,17 @@ export default defineConfig(({ mode }) => {
   }
 
   return {
+    base: "/itpc-register/",
+    server: {
+      port: 3016,
+      host: true,
+      strictPort: true,
+    },
+    preview: {
+      port: 3016,
+      host: true,
+      strictPort: true,
+    },
     plugins: [react(), localApiPlugin()],
     test: {
       environment: "node",

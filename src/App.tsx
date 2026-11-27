@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { currentBangkokMinutes, DEFAULT_SCHEDULE, getGroupSchedule, isWithinSlot, type ScheduleRound } from "./lib/schedule";
-import { apiRequest, jsonBody } from "./lib/api";
+import { apiRequest, apiUrl, jsonBody } from "./lib/api";
 import { parseStudentCsv, type StudentImportRow } from "./lib/studentCsv";
 import { formatAcademicYear } from "./lib/academicYear";
 
@@ -736,7 +736,7 @@ export default function App() {
     setNotice("");
     try {
       const response = await fetch(
-        `/api/registrations/export?application_year=${selectedAcademicYear}`,
+        apiUrl(`/api/registrations/export?application_year=${selectedAcademicYear}`),
         {
         credentials: "same-origin",
         },
