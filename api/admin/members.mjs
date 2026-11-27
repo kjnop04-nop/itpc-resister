@@ -130,6 +130,10 @@ export default async function handler(request, response) {
           (detail.includes("Administrator access required") || detail.includes("System manager access required"))
         ) {
           message = "ฟังก์ชันจัดการสิทธิ์ในฐานข้อมูลยังเป็นเวอร์ชันเก่า กรุณารัน migration 20261127120000_superadmin_member_updates.sql";
+        } else if (manager.role === "superadmin" && detail) {
+          const safeDetail = detail.replace(/\s+/g, " ").slice(0, 200);
+          console.error("Superadmin account update rejected by database:", safeDetail);
+          message = `ฐานข้อมูลปฏิเสธการแก้ไขสิทธิ์: ${safeDetail}`;
         }
         sendJson(response, 403, { error: message });
         return;
