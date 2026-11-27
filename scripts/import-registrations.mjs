@@ -172,7 +172,7 @@ async function main() {
   });
   const applicationYear = rows[0].application_year;
   const { data: yearSettings, error: settingsError } = await supabase
-    .from("academic_year_settings")
+    .from("itpc_register_academic_year_settings")
     .select("schedule")
     .eq("application_year", applicationYear)
     .eq("is_active", true)
@@ -193,7 +193,7 @@ async function main() {
   });
   for (let offset = 0; offset < scheduledRows.length; offset += 200) {
     const { error } = await supabase
-      .from("registrations")
+      .from("itpc_register_registrations")
       .upsert(scheduledRows.slice(offset, offset + 200), {
         onConflict: "application_year,application_code",
       });

@@ -85,7 +85,7 @@ export default async function handler(request, response) {
       return;
     }
     const { data: activeYear, error: activeYearError } = await client
-      .from("academic_year_settings")
+      .from("itpc_register_academic_year_settings")
       .select("application_year, schedule")
       .eq("is_active", true)
       .single();
@@ -141,7 +141,7 @@ export default async function handler(request, response) {
     }
 
     const { error } = await client
-      .from("registrations")
+      .from("itpc_register_registrations")
       .upsert(rows, { onConflict: "application_year,application_code" });
     if (error) throw error;
     sendJson(response, 200, { imported: rows.length });

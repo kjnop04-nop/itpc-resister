@@ -38,7 +38,7 @@ export default async function handler(request, response) {
 
       const pageSize = 50;
       let registrationQuery = client
-        .from("registrations")
+        .from("itpc_register_registrations")
         .select("id, application_code, application_year, title, first_name, last_name, nickname, parent_phone, group_number, slot_text, slot_start, slot_end")
         .order("group_number", { ascending: true })
         .order("application_code", { ascending: true });
@@ -53,7 +53,7 @@ export default async function handler(request, response) {
       let listedRegistrations = registrations.slice(0, pageSize);
       if (groupNumber !== null && listedRegistrations.length > 0) {
         const { data: activeCheckins, error: activeCheckinsError } = await client
-          .from("checkins")
+          .from("itpc_register_checkins")
           .select("registration_id")
           .in("registration_id", listedRegistrations.map(({ id }) => id))
           .is("voided_at", null);
@@ -72,15 +72,15 @@ export default async function handler(request, response) {
           { count: checkedInCount, error: checkedInError },
         ] = await Promise.all([
           client
-            .from("registrations")
+            .from("itpc_register_registrations")
             .select("id", { count: "exact", head: true })
             .eq("application_year", applicationYear)
             .eq("group_number", groupNumber),
           client
-            .from("checkins")
-            .select("id, registrations!inner(group_number, application_year)", { count: "exact", head: true })
-            .eq("registrations.application_year", applicationYear)
-            .eq("registrations.group_number", groupNumber)
+            .from("itpc_register_checkins")
+            .select("id, itpc_register_registrations!inner(group_number, application_year)", { count: "exact", head: true })
+            .eq("itpc_register_registrations.application_year", applicationYear)
+            .eq("itpc_register_registrations.group_number", groupNumber)
             .is("voided_at", null),
         ]);
         if (totalError) throw totalError;

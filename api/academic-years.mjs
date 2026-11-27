@@ -54,7 +54,7 @@ export default async function handler(request, response) {
   await withAuthenticatedStaff(request, response, async (staff, client) => {
     if (request.method === "GET") {
       const { data, error } = await client
-        .from("academic_year_settings")
+        .from("itpc_register_academic_year_settings")
         .select("application_year, is_active, schedule")
         .order("application_year", { ascending: false });
       if (error) throw error;

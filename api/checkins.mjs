@@ -25,7 +25,7 @@ export default async function handler(request, response) {
           return;
         }
         const { data: checkin, error } = await client
-          .from("checkins")
+          .from("itpc_register_checkins")
           .select("photo_path")
           .eq("id", photoCheckinId)
           .is("voided_at", null)
@@ -50,7 +50,7 @@ export default async function handler(request, response) {
           return;
         }
         const { data, error } = await client
-          .from("checkins")
+          .from("itpc_register_checkins")
           .select("id, checked_in_at, staff_label, note")
           .eq("registration_id", registrationId)
           .is("voided_at", null)
@@ -146,7 +146,7 @@ export default async function handler(request, response) {
     }
 
     const { data: registration, error: registrationError } = await client
-      .from("registrations")
+      .from("itpc_register_registrations")
       .select("application_year")
       .eq("id", registrationId)
       .maybeSingle();
@@ -156,7 +156,7 @@ export default async function handler(request, response) {
       return;
     }
     const { data: activeYear, error: activeYearError } = await client
-      .from("academic_year_settings")
+      .from("itpc_register_academic_year_settings")
       .select("application_year")
       .eq("is_active", true)
       .single();
@@ -182,7 +182,7 @@ export default async function handler(request, response) {
       .upload(path, photo, { contentType: "image/jpeg", cacheControl: "3600", upsert: false });
     if (uploadError) throw uploadError;
 
-    const { error: insertError } = await client.from("checkins").insert({
+    const { error: insertError } = await client.from("itpc_register_checkins").insert({
       registration_id: registrationId,
       checked_in_by: staff.id,
       staff_label: staff.display_name,
@@ -206,7 +206,7 @@ export default async function handler(request, response) {
     }
 
     const { data, error: lookupError } = await client
-      .from("checkins")
+      .from("itpc_register_checkins")
       .select("id, checked_in_at, staff_label, note")
       .eq("registration_id", registrationId)
       .is("voided_at", null)

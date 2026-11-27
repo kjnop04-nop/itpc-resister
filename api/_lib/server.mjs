@@ -186,7 +186,7 @@ export async function authenticatedStaff(request) {
   if (!session) return null;
 
   const { data, error } = await getAnonClient()
-    .from("staff_accounts")
+    .from("itpc_register_staff_accounts")
     .select("id, email, display_name, role, status")
     .eq("id", session.id)
     .eq("status", "active")

@@ -22,7 +22,7 @@ export default async function handler(request, response) {
 
     if (request.method === "GET") {
       const { data, error } = await client
-        .from("staff_accounts")
+        .from("itpc_register_staff_accounts")
         .select("id, login_id, email, display_name, role, status, created_at, last_login_at")
         .in("role", ["admin", "staff"])
         .order("created_at", { ascending: false });

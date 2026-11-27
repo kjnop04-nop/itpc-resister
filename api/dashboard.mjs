@@ -25,7 +25,7 @@ export default async function handler(request, response) {
 
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await client
-        .from("registrations")
+        .from("itpc_register_registrations")
         .select("id, group_number")
         .eq("application_year", applicationYear)
         .order("id", { ascending: true })
@@ -44,9 +44,9 @@ export default async function handler(request, response) {
 
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await client
-        .from("checkins")
-        .select("id, registration_id, registrations!inner(application_year)")
-        .eq("registrations.application_year", applicationYear)
+        .from("itpc_register_checkins")
+        .select("id, registration_id, itpc_register_registrations!inner(application_year)")
+        .eq("itpc_register_registrations.application_year", applicationYear)
         .is("voided_at", null)
         .order("id", { ascending: true })
         .range(offset, offset + PAGE_SIZE - 1);

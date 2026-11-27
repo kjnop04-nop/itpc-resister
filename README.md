@@ -22,6 +22,8 @@
    - `supabase/migrations/20261127140000_anon_key_custom_jwt_rls.sql`
    - `supabase/migrations/20261127150000_allow_anon_role_full_access.sql`
    - `supabase/migrations/20261127160000_student_nickname_parent_phone.sql`
+   - `supabase/migrations/20261127170000_prefix_application_tables.sql`
+   migration ล่าสุดเปลี่ยนชื่อตารางข้อมูลของแอปที่มีอยู่ให้ขึ้นต้นด้วย `itpc_register_` และอัปเดตฟังก์ชัน SQL ที่อ้างถึงตารางเหล่านั้น
    migration `20261127110000_allow_multiple_admins.sql` อนุญาตให้แอดมินทั่วไปสร้างบัญชีแอดมินเพิ่มได้ โดยแอดมินยังจัดการบัญชีแอดมินคนอื่นไม่ได้
    migration `20261127120000_superadmin_member_updates.sql` ปรับฟังก์ชันเลื่อน/แก้สิทธิ์บัญชีให้แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่ได้
    migration `20261127130000_fix_admin_role_assignment.sql` แก้การตรวจสิทธิ์ตอนเลื่อนเจ้าหน้าที่เป็นแอดมิน
@@ -29,7 +31,7 @@
 2. กำหนดบัญชีแอดมินใหญ่เริ่มต้นใน SQL Editor โดยตรวจสอบก่อนว่าเป็นบัญชีของคุณ แล้วรันคำสั่งนี้:
 
    ```sql
-   update public.staff_accounts
+   update public.itpc_register_staff_accounts
    set role = 'superadmin', status = 'active'
    where email = lower('admin@gmail.com')
      and role in ('admin', 'staff');
@@ -38,7 +40,7 @@
    ตรวจสอบว่าคำสั่งอัปเดตบัญชีได้ 1 แถว หากไม่ใช่ 1 แถว ให้ตรวจสอบบัญชีก่อนดำเนินการต่อ หากไม่มีบัญชีนี้ ให้สร้างบัญชีแอดมินใหญ่เริ่มต้นด้วย SQL โดยแทน ID อีเมล ชื่อ และรหัสผ่านด้วยข้อมูลที่ต้องการ:
 
    ```sql
-   insert into public.staff_accounts (
+   insert into public.itpc_register_staff_accounts (
      login_id, email, display_name, password_hash, password_hash_scheme, role, status
    )
    values (
@@ -79,19 +81,19 @@
 ### แก้ปัญหาเข้าสู่ระบบ
 
 - ถ้าขึ้นว่า ID หรือรหัสผ่านไม่ถูกต้อง บัญชีอาจยังไม่ได้ถูกนำเข้าจาก Supabase Authentication เดิม (รัน migration `20261125110000_staff_accounts_and_admin.sql`) หรือรหัสผ่านไม่ตรงกับบัญชี
-- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบเจ็ดตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
+- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบแปดตามลำดับ และตาราง `itpc_register_staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
 - ถ้าแจ้ง environment variables ให้ตั้ง `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_JWT_SECRET` และ `SESSION_SECRET` ใน environment ฝั่ง server (รวมถึง Vercel Project Settings > Environment Variables เมื่อนำขึ้น production) แล้ว redeploy
 - ข้อผิดพลาดอื่นให้ดู function logs ใน Vercel หรือ terminal ที่รัน `npm run dev`; รายละเอียดภายในจะไม่ถูกส่งกลับไปยังหน้าเว็บ
 
 ## นำเข้ารายชื่อจาก Excel
 
-แปลง Excel เป็น CSV ที่ใช้ชื่อคอลัมน์และรูปแบบเวลาตรงกับตาราง `registrations` สำหรับนำเข้าผ่าน Supabase Dashboard:
+แปลง Excel เป็น CSV ที่ใช้ชื่อคอลัมน์และรูปแบบเวลาตรงกับตาราง `itpc_register_registrations` สำหรับนำเข้าผ่าน Supabase Dashboard:
 
 ```powershell
 npm.cmd run import:registrations -- --export-csv "C:\path\to\registration.xlsx"
 ```
 
-ระบบจะสร้างไฟล์ `_supabase.csv` ข้างไฟล์ต้นฉบับโดยไม่แก้หรือลบต้นฉบับ จากนั้นเปิด Supabase Dashboard → **Table Editor** → `registrations` → **Import data from CSV** แล้วเลือก CSV ที่สร้าง
+ระบบจะสร้างไฟล์ `_supabase.csv` ข้างไฟล์ต้นฉบับโดยไม่แก้หรือลบต้นฉบับ จากนั้นเปิด Supabase Dashboard → **Table Editor** → `itpc_register_registrations` → **Import data from CSV** แล้วเลือก CSV ที่สร้าง
 
 ไฟล์ Excel ที่มีคอลัมน์ `ชื่อเล่น` และ `เบอร์ผู้ปกครอง` จะส่งออกเป็นคอลัมน์ `nickname` และ `parent_phone` ใน CSV ด้วย โดยเบอร์โทรเก็บเป็นข้อความเพื่อรักษาเลขศูนย์นำหน้า
 

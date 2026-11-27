@@ -40,7 +40,7 @@ export default async function handler(request, response) {
     const rows = [];
     for (let offset = 0; ; offset += PAGE_SIZE) {
       const { data, error } = await client
-        .from("registrations")
+        .from("itpc_register_registrations")
         .select(COLUMNS.join(", "))
         .eq("application_year", applicationYear)
         .order("application_code", { ascending: true })
