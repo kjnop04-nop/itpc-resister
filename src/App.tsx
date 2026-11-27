@@ -2100,7 +2100,7 @@ export default function App() {
                     <p className="muted">ให้ผู้ปกครองถือบัตรที่มีรหัสให้เห็นในภาพ</p>
                   </div>
 
-                  {cameraOpen ? null : photo ? (
+                  {cameraOpen ? null : (photo && photoUrl) ? (
                     <div className="photo-preview-wrap">
                       <img className="photo-preview" src={photoUrl} alt="ภาพถ่ายคู่กับรหัส" />
                       <label className="checkin-note-field">
