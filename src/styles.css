@@ -114,7 +114,7 @@ button {
   gap: 14px;
 }
 
-.brand > div {
+.brand>div {
   min-width: 0;
 }
 
@@ -407,7 +407,7 @@ button {
   background: rgb(255 255 255 / 45%);
 }
 
-.overview-group-progress > span {
+.overview-group-progress>span {
   display: block;
   height: 100%;
   border-radius: inherit;
@@ -818,6 +818,43 @@ button {
   margin: 14px auto 0;
 }
 
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #ebe5df;
+  flex-wrap: wrap;
+}
+
+.pagination-info {
+  font-size: 14px;
+  color: #6d665f;
+}
+
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagination-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 14px;
+}
+
+.pagination-page-indicator {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0 8px;
+  color: #211b24;
+}
+
 .section-heading {
   gap: 13px;
   margin-bottom: 22px;
@@ -1077,18 +1114,18 @@ button {
 .status-checked {
   flex-wrap: wrap;
   align-items: center;
-  border-color: #efd9dc;
-  background: #f8e9eb;
-  color: #39343c;
+  border-color: #ecf8e9;
+  background: #ecf8e9;
+  color: #000000;
 }
 
-.status-checked > div {
+.status-checked>div {
   flex: 1;
   min-width: 140px;
 }
 
 .status-checked .status-icon {
-  background: #f0dadd;
+  background: #2a8d2f;
 }
 
 .applicant-cancel-checkin {
@@ -1137,7 +1174,7 @@ button {
   color: var(--accent);
 }
 
-.registration-card > .group-back-button {
+.registration-card>.group-back-button {
   margin: 0 0 14px;
 }
 
@@ -1149,11 +1186,11 @@ button {
   margin-bottom: 18px;
 }
 
-.applicant-detail-top > .group-back-button {
+.applicant-detail-top>.group-back-button {
   margin: 0;
 }
 
-.applicant-detail-top > .registration-details {
+.applicant-detail-top>.registration-details {
   width: 100%;
 }
 
@@ -1272,11 +1309,11 @@ button {
   background: #fff;
 }
 
-.camera-actions > :first-child {
+.camera-actions> :first-child {
   justify-self: start;
 }
 
-.camera-actions > :last-child {
+.camera-actions> :last-child {
   grid-column: 2;
 }
 
@@ -1498,8 +1535,8 @@ button {
   font-size: 25px;
 }
 
-.login-card > .muted,
-.setup-card > p:last-child {
+.login-card>.muted,
+.setup-card>p:last-child {
   margin: 8px 0 24px;
   color: #514b55;
   font-size: 15px;
@@ -1589,7 +1626,7 @@ button {
   font-size: 14px;
 }
 
-.student-data-notes li + li {
+.student-data-notes li+li {
   margin-top: 6px;
 }
 
@@ -1673,7 +1710,7 @@ button {
   margin-bottom: 16px;
 }
 
-.year-settings-actions > div {
+.year-settings-actions>div {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1828,6 +1865,7 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -2057,7 +2095,7 @@ button {
     flex-direction: column;
   }
 
-  .checked-in-actions > .button {
+  .checked-in-actions>.button {
     width: 100%;
   }
 

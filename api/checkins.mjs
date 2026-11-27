@@ -66,6 +66,7 @@ export default async function handler(request, response) {
         sendJson(response, 400, { error: "กรุณาเลือกปีการศึกษาให้ถูกต้อง" });
         return;
       }
+      const requestedLimit = Math.min(Math.max(Number(params.get("limit") || 15), 1), 100);
       const requestedOffset = Number(params.get("offset") || 0);
       if (!Number.isSafeInteger(requestedOffset) || requestedOffset < 0) {
         sendJson(response, 400, { error: "ตำแหน่งรายการไม่ถูกต้อง" });
@@ -74,13 +75,27 @@ export default async function handler(request, response) {
       const { data, error } = await client.rpc("list_active_checkins", {
         p_application_year: applicationYear,
         p_search: search,
-        p_limit: 50,
+        p_limit: requestedLimit,
         p_offset: requestedOffset,
       });
       if (error) throw error;
+
+      let totalCount = null;
+      if (!search) {
+        const { count, error: countError } = await client
+          .from("itpc_register_checkins")
+          .select("id, itpc_register_registrations!inner(application_year)", { count: "exact", head: true })
+          .eq("itpc_register_registrations.application_year", applicationYear)
+          .is("voided_at", null);
+        if (!countError && typeof count === "number") {
+          totalCount = count;
+        }
+      }
+
       sendJson(response, 200, {
-        checkins: data,
-        has_more: data.length === 50,
+        checkins: data || [],
+        has_more: (data || []).length === requestedLimit,
+        total_count: totalCount,
       });
       return;
     }
