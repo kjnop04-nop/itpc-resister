@@ -11,8 +11,8 @@ set search_path = ''
 as $$
 declare
   actor_role text;
-  current_role text;
-  current_status text;
+  target_role text;
+  target_status text;
   active_admin_count integer;
 begin
   perform pg_catalog.pg_advisory_xact_lock(847261903);
@@ -32,7 +32,7 @@ begin
     raise exception using errcode = '22023', message = 'Invalid member state';
   end if;
 
-  select role, status into current_role, current_status
+  select role, status into target_role, target_status
   from public.staff_accounts
   where id = p_target_id
   for update;
@@ -40,9 +40,9 @@ begin
     return false;
   end if;
 
-  if current_role = 'superadmin'
-    or (actor_role = 'admin' and (current_role <> 'staff' or p_role <> 'staff'))
-    or (actor_role = 'superadmin' and current_role not in ('admin', 'staff')) then
+  if target_role = 'superadmin'
+    or (actor_role = 'admin' and (target_role <> 'staff' or p_role <> 'staff'))
+    or (actor_role = 'superadmin' and target_role not in ('admin', 'staff')) then
     raise exception using errcode = '42501', message = 'Insufficient permission for target account';
   end if;
 
@@ -50,7 +50,7 @@ begin
     raise exception using errcode = '42501', message = 'Cannot remove your own administrator access';
   end if;
 
-  if current_role = 'admin' and current_status = 'active'
+  if target_role = 'admin' and target_status = 'active'
     and (p_role <> 'admin' or p_status <> 'active') then
     select count(*) into active_admin_count
     from public.staff_accounts

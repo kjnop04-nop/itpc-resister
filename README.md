@@ -18,8 +18,10 @@
    - `supabase/migrations/20261127100000_academic_years_and_schedules.sql`
    - `supabase/migrations/20261127110000_allow_multiple_admins.sql`
    - `supabase/migrations/20261127120000_superadmin_member_updates.sql`
+   - `supabase/migrations/20261127130000_fix_admin_role_assignment.sql`
    migration `20261127110000_allow_multiple_admins.sql` อนุญาตให้แอดมินทั่วไปสร้างบัญชีแอดมินเพิ่มได้ โดยแอดมินยังจัดการบัญชีแอดมินคนอื่นไม่ได้
    migration `20261127120000_superadmin_member_updates.sql` ปรับฟังก์ชันเลื่อน/แก้สิทธิ์บัญชีให้แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่ได้
+   migration `20261127130000_fix_admin_role_assignment.sql` แก้การตรวจสิทธิ์ตอนเลื่อนเจ้าหน้าที่เป็นแอดมิน
    migration `20261125110000_staff_accounts_and_admin.sql` จะนำเข้าบัญชีที่มีรหัสผ่านจาก Supabase Authentication เดิม โดยคง password hash เดิมไว้ บัญชีเดิมจะถูกนำเข้าเป็นเจ้าหน้าที่ที่ active แต่ยังไม่มีสิทธิ์แอดมิน
 2. กำหนดบัญชีแอดมินใหญ่เริ่มต้นใน SQL Editor โดยตรวจสอบก่อนว่าเป็นบัญชีของคุณ แล้วรันคำสั่งนี้:
 
@@ -73,7 +75,7 @@
 ### แก้ปัญหาเข้าสู่ระบบ
 
 - ถ้าขึ้นว่า ID หรือรหัสผ่านไม่ถูกต้อง บัญชีอาจยังไม่ได้ถูกนำเข้าจาก Supabase Authentication เดิม (รัน migration `20261125110000_staff_accounts_and_admin.sql`) หรือรหัสผ่านไม่ตรงกับบัญชี
-- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบสามตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
+- ถ้าระบบแจ้งว่าฐานข้อมูลตั้งค่าไม่ครบ ให้ตรวจว่ารัน migrations ทั้งสิบสี่ตามลำดับ และตาราง `staff_accounts`/ฟังก์ชัน `verify_staff_login` มีอยู่
 - ถ้าแจ้ง environment variables ให้ตั้ง `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` และ `SESSION_SECRET` ใน environment ฝั่ง server (รวมถึง Vercel Project Settings > Environment Variables เมื่อนำขึ้น production) แล้ว redeploy
 - ข้อผิดพลาดอื่นให้ดู function logs ใน Vercel หรือ terminal ที่รัน `npm run dev`; รายละเอียดภายในจะไม่ถูกส่งกลับไปยังหน้าเว็บ
 
