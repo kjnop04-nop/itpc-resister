@@ -603,7 +603,7 @@ export default function App() {
     setAdminBusyId("create");
     setError("");
     setNotice("");
-    const role = session?.role === "superadmin" ? newMemberRole : "staff";
+    const role = newMemberRole;
     try {
       await apiRequest<{ success: boolean }>("/api/admin/members", {
         method: "POST",
@@ -1289,7 +1289,7 @@ export default function App() {
                 <p className="muted">
                   {isSuperadmin
                     ? "แอดมินใหญ่จัดการบัญชีแอดมินและเจ้าหน้าที่"
-                    : "แอดมินสร้างและจัดการบัญชีเจ้าหน้าที่ และดูบัญชีแอดมินได้"}
+                    : "แอดมินสร้างบัญชีแอดมินหรือเจ้าหน้าที่ได้ และจัดการบัญชีเจ้าหน้าที่"}
                 </p>
               </div>
               <button
@@ -1341,18 +1341,16 @@ export default function App() {
                     required
                   />
                 </label>
-                {isSuperadmin && (
-                  <label>
-                    ระดับสิทธิ์
-                    <select
-                      value={newMemberRole}
-                      onChange={(event) => setNewMemberRole(event.target.value === "admin" ? "admin" : "staff")}
-                    >
-                      <option value="staff">เจ้าหน้าที่</option>
-                      <option value="admin">แอดมิน</option>
-                    </select>
-                  </label>
-                )}
+                <label>
+                  ระดับสิทธิ์
+                  <select
+                    value={newMemberRole}
+                    onChange={(event) => setNewMemberRole(event.target.value === "admin" ? "admin" : "staff")}
+                  >
+                    <option value="staff">เจ้าหน้าที่</option>
+                    <option value="admin">แอดมิน</option>
+                  </select>
+                </label>
               </div>
               <button className="button button-primary" type="submit" disabled={adminBusyId !== null}>
                 {adminBusyId === "create" ? "กำลังเพิ่มบัญชี…" : "เพิ่มบัญชี"}

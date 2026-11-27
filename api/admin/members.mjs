@@ -66,11 +66,6 @@ export default async function handler(request, response) {
         sendJson(response, 400, { error: "กรุณากรอก ID ชื่อ รหัสผ่าน และระดับสิทธิ์ให้ถูกต้อง; อีเมลเป็นช่องไม่บังคับ" });
         return;
       }
-      if (manager.role === "admin" && role !== "staff") {
-        sendJson(response, 403, { error: "แอดมินสร้างได้เฉพาะบัญชีเจ้าหน้าที่" });
-        return;
-      }
-
       const { error } = await client.rpc("manager_create_staff_account", {
         p_actor_id: manager.id,
         p_login_id: loginId,
